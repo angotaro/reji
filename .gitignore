@@ -1,0 +1,6 @@
+node_modules/
+tests/shots/
+.dev.vars
+.wrangler/
+.DS_Store
+.grok/

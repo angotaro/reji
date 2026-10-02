@@ -1,0 +1,92 @@
+{
+  "name": "Reji：JPYCで受け取るレジ",
+  "short_name": "Reji",
+  "description": "JPYCで受け取る、無料のレジ。決済手数料0円・月額0円・登録不要。お金はお客様からお店へ直接届きます。",
+  "start_url": "./app.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E7EAF0",
+  "theme_color": "#22305A",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/img/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/img/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "id": "./app.html",
+  "dir": "ltr",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "売上",
+      "short_name": "売上",
+      "description": "今日の売上と取引",
+      "url": "./app.html#/sales",
+      "icons": [
+        {
+          "src": "assets/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "設定",
+      "short_name": "設定",
+      "description": "お店とレジの設定",
+      "url": "./app.html#/settings",
+      "icons": [
+        {
+          "src": "assets/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/img/screens/register-wide.avif",
+      "sizes": "1180x820",
+      "type": "image/avif",
+      "form_factor": "wide",
+      "label": "レジ画面（タブレット）"
+    },
+    {
+      "src": "assets/img/screens/pay-narrow.avif",
+      "sizes": "780x1688",
+      "type": "image/avif",
+      "form_factor": "narrow",
+      "label": "お客様のお支払い画面"
+    }
+  ]
+}
