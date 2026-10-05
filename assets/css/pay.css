@@ -1,0 +1,148 @@
+/* Customer pages: pay + receipts (phone first) */
+body.pay { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+#pay, #rcpt { flex: 1; display: flex; flex-direction: column; }
+.pay-top { justify-content: space-between; }
+.pay-main { flex: 1; display: grid; align-content: start; gap: 1.4rem; width: min(480px, 100%); margin: 0 auto; padding: 1.4rem 1rem 2rem; }
+.bill, .paper-wrap { position: relative; box-shadow: 0 16px 34px -26px rgba(24, 33, 63, .6); }
+.bill::after, .paper-wrap::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 9px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M0 0h14L7 9z' fill='%23fff'/%3E%3C/svg%3E") repeat-x 0 0 / 14px 9px;
+}
+.bill { padding: 1.4rem 1.25rem 1.3rem; background: var(--paper); text-align: center; }
+.bill-label { margin: 0; color: var(--ink-soft); font-size: var(--t-sm); font-weight: 700; }
+.bill-amount { margin: 0.1rem 0 0; color: var(--ink); font-family: var(--font-dot); font-size: clamp(3rem, 15vw, 4.4rem); line-height: 1.05; }
+.bill-sub { margin: 0.1rem 0 0; color: var(--ink-soft); font-family: var(--font-dot); }
+.bill-desc { margin: 0.6rem 0 0; font-size: var(--t-sm); }
+.bill-kv { margin-top: 1rem; }
+.bill-stamp { position: absolute; top: 0.45rem; right: 0.3rem; width: 96px; aspect-ratio: 1; }
+.pay-panel { display: grid; gap: 0.8rem; }
+.panel-title { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: var(--t-lg); }
+.panel-text { margin: 0; color: var(--ink-soft); font-size: var(--t-sm); }
+.wallet-list, .deep-links { display: grid; gap: 0.5rem; }
+.wallet-btn { justify-content: flex-start; min-height: 56px; padding-inline: 1rem; font-size: var(--t-md); }
+.wallet-btn img { width: 28px; height: 28px; border-radius: 7px; }
+.pay-btn { width: 100%; min-height: 60px; }
+.acct { margin-top: 0; }
+.manual { padding: 0 1rem 0.25rem; border-radius: 14px; background: var(--paper); }
+.manual summary { display: flex; align-items: center; min-height: 52px; color: var(--ai); font-weight: 700; cursor: pointer; }
+.manual .fine { margin-bottom: 0.25rem; }
+.manual .btn { margin: 1rem 0 0.9rem; }
+.copyable dd { display: flex; align-items: center; justify-content: flex-end; gap: 0.1rem; }
+.copyable code { font-family: var(--font-ui); font-size: var(--t-xs); text-align: right; word-break: break-all; }
+.notice.free { background: #e7f2ea; border: 1.5px solid #b9d7c2; color: #23502f; }
+.done-title { color: var(--matcha); }
+.done-title .ic { width: 1.5rem; height: 1.5rem; }
+.pay-foot { padding: 0.5rem 1rem calc(1.2rem + env(safe-area-inset-bottom)); color: var(--ink-soft); font-size: var(--t-xs); text-align: center; }
+.pay-foot p { margin: 0.2rem 0; }
+
+/* receipts */
+.rcpt-main { width: min(560px, 100%); }
+.paper-wrap .rc-totals { position: relative; }
+.rc-stamp { position: absolute; top: 50%; left: 50%; width: 100px; aspect-ratio: 1; margin: -50px 0 0 -62px; }
+.verify { display: flex; align-items: center; gap: 0.5rem; margin: 1.3rem 0 0; color: var(--ink-soft); font-size: var(--t-sm); font-weight: 700; }
+.verify[data-state="verified"] { color: var(--matcha); }
+.verify[data-state="failed"], .verify[data-state="mismatch"], .verify[data-state="error"] { color: var(--danger); }
+.saved-tag { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 0.5rem; color: var(--matcha); font-weight: 700; }
+.saved-list { margin: 0.75rem 0 0; padding: 0; overflow: hidden; list-style: none; background: var(--paper); border-radius: 12px; }
+.saved-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-right: 0.4rem; }
+.saved-list li + li { border-top: 1px solid var(--line-soft); }
+.saved-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 0; background: none; text-align: left; cursor: pointer; }
+.saved-row:hover { background: #f5f7fb; }
+.row-main { display: grid; min-width: 0; }
+.row-desc { overflow: hidden; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+.row-no { color: var(--ink-soft); font-size: var(--t-xs); }
+.row-amt { font-family: var(--font-dot); font-size: var(--t-lg); text-align: right; }
+.rcpt-saved .btn-row { margin-top: 0.9rem; }
+.sign-paper { text-align: left; }
+.sign-msg { margin: 0.6rem 0 0; padding: 0.75rem; border-radius: 8px; background: var(--mist); font: inherit; font-size: var(--t-xs); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* A rotated stamp near the screen edge must never make the page scroll sideways. */
+html, body { overflow-x: clip; }
+
+/* the store's look on the customer's phone */
+.pay-store { display: inline-flex; align-items: center; gap: 0.55rem; min-width: 0; }
+.store-logo { width: 34px; height: 34px; flex: none; border-radius: 9px; background: #fff; object-fit: contain; padding: 2px; animation: logo-in .35s ease-out; }
+@keyframes logo-in { from { opacity: 0; transform: scale(.85); } }
+.store-msg { margin: 0.25rem 0 0.75rem; padding: 0.75rem 0.9rem; border-left: 4px solid var(--brand, var(--ai)); border-radius: 10px; background: color-mix(in srgb, var(--brand, var(--ai)) 7%, #fff); line-height: 1.65; }
+.row-logo { width: 32px; height: 32px; flex: none; border-radius: 8px; border: 1px solid var(--line-soft); background: #fff; object-fit: contain; }
+@media (prefers-reduced-motion: reduce) { .store-logo { animation: none; } }
+
+/* ---- store presence on the customer's phone ---- */
+.bill-event { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0.45rem 0 0; padding: 0.2rem 0.75rem; border-radius: 99px; background: color-mix(in srgb, var(--brand, var(--ai)) 10%, #fff); color: var(--brand, var(--ai)); font-size: var(--t-sm); font-weight: 700; }
+.bill-event .ic { width: 15px; height: 15px; }
+.done-store { display: grid; gap: 0.6rem; margin: 0.9rem 0 0.4rem; }
+.sp-main { display: grid; gap: 1rem; align-content: start; }
+.sp-note { margin: -0.4rem 0 0; color: var(--ink-soft); font-size: var(--t-xs); }
+.sp-jpyc { padding: 1rem 1.1rem; border: 1px dashed var(--line); border-radius: 14px; background: #fff; }
+.sp-jpyc p { margin: 0.35rem 0 0; line-height: 1.75; }
+.sp-mine .saved-row { color: inherit; text-decoration: none; }
+.store-chips { display: flex; gap: 0.5rem; margin: 0 0 0.75rem; padding: 0.15rem 0 0.35rem; overflow-x: auto; }
+.store-chip { display: inline-flex; flex: none; align-items: center; gap: 0.45rem; padding: 0.28rem 0.85rem 0.28rem 0.28rem; border: 1px solid var(--line-soft); border-radius: 99px; background: #fff; color: var(--ink); font-size: var(--t-sm); font-weight: 700; text-decoration: none; }
+.store-chip img, .chip-mono { width: 28px; height: 28px; flex: none; border-radius: 50%; background: #fff; object-fit: contain; }
+.chip-mono { display: grid; place-items: center; background: var(--ai); color: #fff; font-size: 0.8rem; }
+.rc-addr { margin-top: 0.75rem; border: 1px solid var(--line-soft); border-radius: 12px; background: #fff; }
+.rc-addr summary { display: flex; align-items: center; gap: 0.45rem; padding: 0.75rem 0.9rem; font-weight: 700; list-style: none; cursor: pointer; }
+.rc-addr summary::-webkit-details-marker { display: none; }
+.rc-addr summary .ic { width: 18px; height: 18px; }
+.rc-addr-body { display: grid; gap: 0.6rem; padding: 0 0.9rem 0.9rem; }
+
+/* ---- 応援 (tips): collapsed, quiet, at the bottom of the store page ---- */
+.sp-tip { border: 1px solid var(--line-soft); border-radius: 14px; background: #fff; }
+.sp-tip > summary { display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0.7rem 1rem; color: var(--ink-soft); font-weight: 700; list-style: none; cursor: pointer; }
+.sp-tip > summary::-webkit-details-marker { display: none; }
+.sp-tip > summary .ic { width: 20px; height: 20px; flex: none; color: var(--brand, var(--ai)); }
+.sp-tip > summary::after { content: ''; width: 0.5rem; height: 0.5rem; margin-left: auto; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .2s; }
+.sp-tip[open] > summary::after { transform: rotate(-135deg); }
+.sp-tip-body { display: grid; gap: 0.75rem; padding: 0 1rem 1rem; }
+.sp-tip-lead { margin: 0; line-height: 1.75; }
+.tip-amounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 0.45rem; }
+.tip-amt { min-height: 46px; padding: 0 0.4rem; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-family: var(--font-dot); font-size: 1.05rem; cursor: pointer; }
+.tip-amt[aria-pressed="true"] { border-color: var(--brand, var(--ai)); background: color-mix(in srgb, var(--brand, var(--ai)) 10%, #fff); color: var(--brand, var(--ai)); box-shadow: inset 0 0 0 1px var(--brand, var(--ai)); }
+.tip-other { margin: 0; }
+.tip-input { display: flex; align-items: center; gap: 0.5rem; }
+.tip-input input { flex: 1 1 auto; min-width: 0; font-family: var(--font-dot); }
+.tip-kv { margin: 0; }
+.tip-kv dd { min-width: 0; }
+.tip-kv code { font-size: 0.85em; }
+.tip-checks { display: grid; gap: 0.35rem; margin: 0; padding: 0; list-style: none; font-size: var(--t-sm); }
+.tip-checks li { display: flex; align-items: flex-start; gap: 0.35rem; line-height: 1.55; }
+.tip-checks .ok { color: #1f7a4d; }
+.tip-checks .ok .ic { width: 16px; height: 16px; flex: none; margin-top: 0.2rem; }
+.tip-checks .warn { padding: 0.5rem 0.65rem; border-radius: 8px; background: #fff4e5; color: #8a4b00; }
+.tip-go { width: 100%; }
+.tip-mine { margin: 0; color: var(--ink-soft); }
+.in-app { margin: 0.25rem 0 0.75rem; }
+.store-logo.shown { animation: none; }
+
+/* ---- no wallet in this browser: the other ways ---- */
+.other-ways { margin: 0.6rem 0 0; padding: 0 1rem 0.25rem; border-radius: 14px; background: var(--paper); }
+.other-ways summary { display: flex; align-items: center; min-height: 52px; color: var(--ai); font-weight: 700; cursor: pointer; }
+.ways { display: grid; gap: 0.85rem; margin: 0 0 0.9rem; padding-left: 1.3rem; line-height: 1.75; }
+.ways li > span { display: block; }
+.ways .btn { margin-top: 0.5rem; }
+.open-failed { margin: 0.6rem 0 0; }
+
+/* ---- お品書き on the store page: dotted leaders like a printed menu ---- */
+.sp-menu { padding: 1rem 1.1rem 1.1rem; border: 1px solid var(--line-soft); border-radius: 14px; background: #fff; }
+.sp-menu .panel-title small { margin-left: 0.4rem; color: var(--ink-soft); font-size: 0.8rem; font-weight: 400; }
+.sp-cat { margin: 0.9rem 0 0.2rem; color: var(--brand, var(--ai)); font-size: var(--t-sm); letter-spacing: 0.06em; }
+.sp-items { margin: 0; padding: 0; list-style: none; }
+.sp-items li { display: flex; align-items: baseline; gap: 0.4rem; padding: 0.38rem 0; }
+.sp-name { min-width: 0; overflow-wrap: anywhere; }
+.sp-lead { flex: 1 1 1rem; min-width: 1rem; border-bottom: 2px dotted var(--line); transform: translateY(-0.28em); }
+.sp-price { flex: none; font-family: var(--font-dot); }
+.sp-more { width: 100%; margin-top: 0.5rem; }
+.sp-menu .panel-title, .sc-name, .sc-tag { text-wrap: balance; word-break: auto-phrase; }
+
+/* ---- HashPort Wallet: copy here, send there, the page spots the payment ---- */
+.hp-card { margin: 0 0 1.2rem; padding: 1rem 1.1rem 1.05rem; border: 1.5px solid var(--ai); border-radius: 16px; background: #fff; }
+.hp-card .panel-title { margin-top: 0; }
+.hp-steps { display: grid; gap: 0.85rem; margin: 0.5rem 0 0.6rem; padding-left: 1.3rem; line-height: 1.7; }
+.hp-steps li > span { display: block; word-break: auto-phrase; }
+.hp-steps .btn { margin-top: 0.45rem; }
+.hp-addr { display: block; margin-top: 0.4rem; color: var(--ink-soft); font-family: var(--font-dot); font-size: 0.8rem; word-break: break-all; }
+.hp-wait { display: flex; align-items: flex-start; gap: 0.45rem; margin: 0.5rem 0 0; color: var(--ai); font-size: var(--t-sm); font-weight: 700; line-height: 1.6; }
+.hp-wait .ic { width: 16px; height: 16px; flex: none; margin-top: 0.22rem; animation: hp-spin 1.8s linear infinite; }
+@keyframes hp-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hp-wait .ic { animation: none; } }
+.hp-tipnote { margin: 0 0 1rem; }

@@ -1,0 +1,14 @@
+# Published: the site only. Kept in the repository but not served:
+.git
+.github
+node_modules
+tests
+tools
+wrangler.jsonc
+.assetsignore
+.gitignore
+.nojekyll
+README.md
+vercel.json
+package.json
+package-lock.json

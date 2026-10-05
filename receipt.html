@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no, email=no, address=no, date=no">
+<meta name="color-scheme" content="only light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#22305A">
+<link rel="preload" href="assets/fonts/reji-dot.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/pay.css">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Receipts</title>
+<meta name="robots" content="noindex">
+<meta property="og:site_name" content="Reji">
+<meta property="og:type" content="website">
+<meta property="og:title" content="電子レシート｜Reji">
+<meta property="og:description" content="Rejiで、JPYCのお支払い・電子レシート・店主確認を行うページです。">
+<meta property="og:image" content="assets/img/landing/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Reji：JPYCで受け取る、お店のレジ。決済手数料0円・月額0円・登録不要">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="電子レシート｜Reji">
+<meta name="twitter:description" content="Rejiで、JPYCのお支払い・電子レシート・店主確認を行うページです。">
+<meta name="twitter:image" content="assets/img/landing/og.png">
+<meta name="twitter:image:alt" content="Reji：JPYCで受け取る、お店のレジ。決済手数料0円・月額0円・登録不要">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Reji">
+<meta name="application-name" content="Reji">
+<script type="module" src="assets/js/receipt-page.js"></script>
+</head>
+<body class="pay">
+<div id="rcpt"></div>
+<div id="modal" hidden></div>
+<footer class="legal-links"><a href="terms.html">利用規約（Terms）</a><a href="privacy.html">プライバシー・外部送信（Privacy）</a></footer>
+<div id="print-root" aria-hidden="true"></div>
+<noscript><p style="padding:1rem">Receipts need JavaScript. / レシートの表示にはJavaScriptが必要です。</p></noscript>
+</body>
+</html>

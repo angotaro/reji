@@ -1,0 +1,13 @@
+// Cloudflare Workers, static assets only (no Worker script, nothing billed per request).
+// Dashboard settings: Build command `node tools/build.mjs`, Deploy command `npx wrangler deploy`.
+// "name" must match the Worker's name in the Cloudflare dashboard. The site address becomes
+// https://<name>.<your workers.dev subdomain>.workers.dev: keep crypto brand names (jpyc,
+// metamask, hashport, wallet…) out of both, or wallet phishing filters will block the site.
+{
+  "name": "reji",
+  "compatibility_date": "2026-10-03",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./"
+  }
+}

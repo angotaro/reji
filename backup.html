@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no, email=no, address=no, date=no">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#22305A">
+<title>お店のバックアップと引き継ぎ | Reji</title>
+<meta name="description" content="Rejiのお店のデータ（設定・商品・売上）をバックアップして、新しい端末や2台目のレジに引き継ぐ手順です。">
+<link rel="canonical" href="backup.html">
+<meta property="og:url" content="backup.html">
+<meta property="og:site_name" content="Reji">
+<meta property="og:type" content="website">
+<meta property="og:title" content="お店のバックアップと引き継ぎ | Reji">
+<meta property="og:description" content="Rejiのお店のデータ（設定・商品・売上）をバックアップして、新しい端末や2台目のレジに引き継ぐ手順です。">
+<meta property="og:image" content="assets/img/landing/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/img/landing/og.png">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/legal.css">
+</head>
+<body class="legal">
+<header class="lg-head">
+  <a class="lg-brand" href="./"><img src="assets/img/icon.svg" alt="" width="30" height="30"><span>Reji</span></a>
+  <nav><a href="backup.html" aria-current="page">バックアップと引き継ぎ</a><a href="docs/reji-manual-ja.pdf">マニュアル（PDF）</a><a href="app.html">Rejiを開く</a></nav>
+</header>
+<main class="lg-main">
+<h1>お店のバックアップと、別の端末への引き継ぎ</h1>
+<p class="lg-date">最終更新日：2026年10月4日</p>
+<p class="lg-lead">Rejiのお店のデータ（設定・商品・売上）は、運営者のサーバーではなく、お店の端末の中に保存されています。端末を買い替えるとき、2台目のレジを使うとき、故障や紛失に備えるときは、バックアップファイルを使います。</p>
+
+<h2>1. いまの端末で、バックアップを保存する</h2>
+<ol>
+<li>Rejiのレジを開き、上の「設定」を押します。</li>
+<li>設定の項目から「データ」を押します。</li>
+<li>「バックアップを保存」を押すと、<code>reji-backup-日付.json</code> というファイルができます（iPhone・iPadは「ファイル」アプリの「ダウンロード」、Androidやパソコンは「ダウンロード」フォルダ）。</li>
+</ol>
+<figure class="lg-fig"><picture><source srcset="assets/img/help/save.avif" type="image/avif"><img src="assets/img/help/save.jpg" alt="設定の「データ」にある「バックアップを保存」ボタン" loading="lazy" width="960" height="667"></picture><figcaption>「設定」→「データ」→「バックアップを保存」。</figcaption></figure>
+<p class="lg-note">週に1回くらい保存しておくと安心です。最後に保存した日時は「設定」→「このお店の情報」で確かめられます。</p>
+
+<h2>2. ファイルを、新しい端末に送る</h2>
+<ul>
+<li><b>iPhone・iPad・Mac：</b>AirDrop、または「ファイル」アプリ（iCloud Drive）。</li>
+<li><b>どの端末でも：</b>自分あてのメールに添付する、LINEの「Keepメモ」に送る。</li>
+<li><b>Android・パソコン：</b>USBメモリやSDカード。</li>
+</ul>
+<p class="lg-warn">バックアップファイルには、お店のプロフィールの鍵（お店のページを書きかえるための鍵）と、売上の記録が入っています。ほかの人や、グループのトークには送らないでください。お金を動かす鍵は入っていません。</p>
+
+<h2>3. 新しい端末で、引き継ぐ</h2>
+<ol>
+<li>新しい端末でRejiを開き、「Rejiを無料で始める」を押します。</li>
+<li>はじめての画面で「別の端末のお店を引き継ぐ」を選びます。</li>
+</ol>
+<figure class="lg-fig"><picture><source srcset="assets/img/help/welcome.avif" type="image/avif"><img src="assets/img/help/welcome.jpg" alt="「新しくお店をはじめる」と「別の端末のお店を引き継ぐ」の2つの選択肢" loading="lazy" width="960" height="667"></picture><figcaption>はじめての画面。2つ目の「別の端末のお店を引き継ぐ」を選びます。</figcaption></figure>
+<ol start="3">
+<li>「バックアップファイルを選ぶ」を押して、送ったファイルを選びます。</li>
+<li>お店の名前、保存した日時、商品と売上の数を確かめて、この端末の使い方を選びます。
+  <ul>
+  <li><b>この端末に切り替える：</b>前の端末の代わりに使うとき。売上の記録も引き継ぎます。</li>
+  <li><b>2台目のレジとして使う：</b>前の端末と同時に使うとき。売上は引き継がず、この端末のレシート番号に「B」などの記号がつくので、番号がぶつかりません。</li>
+  </ul></li>
+<li>「この内容で引き継ぐ」を押すと、レジの画面が開きます。</li>
+</ol>
+<figure class="lg-fig"><picture><source srcset="assets/img/help/restore.avif" type="image/avif"><img src="assets/img/help/restore.jpg" alt="バックアップファイルの中身（お店の名前、保存日時、商品と売上の数）と、端末の使い方の選択" loading="lazy" width="960" height="667"></picture><figcaption>ファイルを選ぶと、引き継ぐ前に中身が表示されます。</figcaption></figure>
+
+<h2>4. 知っておくこと</h2>
+<ul>
+<li>受取アドレス、店主確認、PIN、お店のページ（ロゴ・紹介・お品書き）も引き継がれます。</li>
+<li>手数料なし決済の「ガス用ウォレット」は、安全のためバックアップに入りません。新しい端末で使うときは、「設定」→「手数料なし決済」でガス用ウォレットを作り直し、少額のPOLを入れます。前の端末に残ったPOLは、前の端末の「残高を店主のウォレットへ戻す」で戻せます。</li>
+<li>バックアップから戻すと、その端末にあったRejiのデータは、ファイルの内容に置きかわります。すでに使っている端末では「設定」→「データ」→「バックアップから復元」を使います。</li>
+<li>前の端末のデータは、引き継いでも消えません。手放す端末は「設定」→「データ」→「すべて消去」で消してください。</li>
+<li>データは端末のブラウザごとに保存されます。同じ端末でも、別のブラウザで開いたり、ブラウザのデータを消したりすると見えなくなるので、その前にバックアップを保存してください。</li>
+</ul>
+
+<section class="lg-en">
+<h2>English summary</h2>
+<p>Reji keeps a store's settings, menu and sales on the store's own device, not on any server. To move to a new device or add a second register:</p>
+<ol>
+<li>On the old device, open Settings → Data → Save backup. This makes a file named <code>reji-backup-date.json</code>.</li>
+<li>Send it to the new device, for example by AirDrop or email.</li>
+<li>On the new device, open Reji and choose “Move a store from another device”. Pick the file, check what's in it, and choose either “Switch to this device” (sales come along) or “Use it as a second register” (no sales copied; receipt numbers get their own letter).</li>
+</ol>
+<p>The no-fee payment gas wallet is never included, so create a new one on the new device if you use it. Keep backup files private: they hold your store profile's key, though no key that can move money.</p>
+</section>
+</main>
+<footer class="lg-foot"><a href="./">トップ</a><a href="terms.html">利用規約</a><a href="privacy.html">プライバシー・外部送信</a><a href="app.html">Rejiを開く</a></footer>
+</body>
+</html>
