@@ -104,20 +104,19 @@ export function watchDeepLinks(root, onFail, ms = 3000) {
   window.addEventListener('pagehide', () => clearTimeout(timer));
 }
 
-/** MetaMask's documented link that opens a page inside the MetaMask app's browser (it works as a QR code too).
- *  Used instead of payment-request links (EIP-681): MetaMask Mobile can answer those with "chain ID 137
- *  not found" even when Polygon is in the wallet, while a page opened in its browser adds or switches
- *  the network itself. */
+/** For the MetaMask button: MetaMask's documented link that opens a page inside its app browser.
+ *  (Reji never uses payment-request links (EIP-681): MetaMask Mobile can answer those with "chain ID 137
+ *  not found" even when Polygon is in the wallet, while a page opened in a wallet's browser adds or
+ *  switches the network itself.) */
 export const metamaskLink = (url) => `https://link.metamask.io/dapp/${String(url).replace(/^https?:\/\//, '')}`;
 
 export function walletDeepLinks(url = pageLinkForWallet()) {
-  const noProto = url.replace(/^https?:\/\//, '');
   const enc = encodeURIComponent(url);
-  return [
-    { id: 'metamask', name: 'MetaMask', href: metamaskLink(url) },
-    { id: 'trust', name: 'Trust Wallet', href: `https://link.trustwallet.com/open_url?coin_id=60&url=${enc}` },
+  return [ // alphabetical: Reji doesn't favour any wallet
     { id: 'coinbase', name: 'Coinbase Wallet', href: `https://go.cb-w.com/dapp?cb_url=${enc}` },
+    { id: 'metamask', name: 'MetaMask', href: metamaskLink(url) },
     { id: 'okx', name: 'OKX Wallet', href: `okx://wallet/dapp/url?dappUrl=${enc}` },
+    { id: 'trust', name: 'Trust Wallet', href: `https://link.trustwallet.com/open_url?coin_id=60&url=${enc}` },
   ];
 }
 

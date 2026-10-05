@@ -201,9 +201,6 @@ const receiptSec = (s) => html`<section class="set-sec" id="sec-receipt">
 
 const registerSec = (s) => html`<section class="set-sec" id="sec-register">
   <h2>${t('set.sec.register')}</h2>
-  <fieldset class="field"><legend class="label">${t('set.qrKind')}</legend>
-    <div class="seg">${radio('qrKind', 'web', s.qrKind, t('charge.qrWeb'))}${radio('qrKind', 'wallet', s.qrKind, t('charge.qrWallet'))}</div>
-    <small class="hint">${t('set.qrKindHint')}</small></fieldset>
   <label class="field narrow"><span class="label">${t('set.expiry')}</span>
     <input name="expiryMin" type="number" min="2" max="120" step="1" value="${s.expiryMin}" inputmode="numeric">
     <small class="hint">${t('set.expiryHint')}</small></label>
@@ -530,7 +527,6 @@ function readForm(form) {
   if (!/^[A-Za-z0-9]{0,4}$/.test(term)) errors.terminal = t('err.terminal');
   else next.terminal = term.toUpperCase();
   next.receiptWidth = get('receiptWidth') === '80' ? 80 : 58;
-  next.qrKind = get('qrKind') === 'wallet' ? 'wallet' : 'web';
   next.expiryMin = clamp(parseInt(toHalfWidth(get('expiryMin')), 10) || 15, 2, 120);
   next.sound = fd.get('sound') === 'on';
   if (form.querySelector('[name="gasless"]')) next.gasless = fd.get('gasless') === 'on';

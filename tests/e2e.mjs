@@ -270,10 +270,7 @@ try {
   await page.waitForSelector('#listen[data-state="ok"]', { timeout: 15000 });
   await page.screenshot({ path: `${OUT}/03-charge.png` });
   ok('charge screen: today\'s event under the store name', (await page.locator('.bill-store-event').textContent()).includes('A-12'));
-  await page.click('[data-act="qrkind"][data-v="wallet"]');
-  ok('charge: the second QR mode opens the page in MetaMask (no payment-request code)', (await page.locator('[data-act="qrkind"][data-v="wallet"]').textContent()).includes('MetaMask')
-    && (await settingsOf(page)).qrKind === 'wallet' && (await page.locator('.tent-hint').textContent()).includes('MetaMask'));
-  await page.click('[data-act="qrkind"][data-v="web"]');
+  ok('charge: one QR for every wallet (no wallet-specific mode)', (await page.locator('[data-act="qrkind"]').count()) === 0 && (await page.locator('#qr-frame svg').count()) === 1);
   await page.locator('#qr-frame svg').screenshot({ path: `${OUT}/qr-pay.png` });
   const pending = await page.evaluate(() => JSON.parse(localStorage.getItem('reji:pending:v1')));
   ok('pending charge saved', pending && pending.amountYen === 2500 && pending.chains.join() === '137,43114', JSON.stringify(pending?.chains));

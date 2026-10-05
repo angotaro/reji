@@ -5,7 +5,6 @@ import { CHAINS, LIMITS, chainName, explorerTx } from './config.js';
 import { yenToWei, eip681, formatUnits, isAddress, UNIT, isTipValue } from './evm.js';
 import { Watcher, blockNumber, scanTransfers, txReceipt, transfersInReceipt, rpc, confirmElsewhere } from './rpc.js';
 import { qrSvg } from './qr.js';
-import { metamaskLink } from './wallet.js';
 import { computeTotals, summarizeItems } from './tax.js';
 import { receiptFromSale, receiptUrl, renderReceipt } from './receipt.js';
 import { chime, unlockAudio } from './sound.js';
@@ -50,8 +49,9 @@ export function payUrl(c, chainId = c.chainId) {
   return u.href;
 }
 
-// 'wallet' (shown as 「MetaMask用」): the same payment page, wrapped in MetaMask's link so it opens in MetaMask.
-const qrText = (c, chainId) => (state.settings.qrKind === 'wallet' ? metamaskLink(payUrl(c, chainId)) : payUrl(c, chainId));
+// One QR for everyone: the payment page. The phone camera or LINE opens it, and from there every wallet has a way in
+// (HashPort Wallet's steps, buttons that open it inside wallet apps, a link to paste, manual sending).
+const qrText = (c, chainId) => payUrl(c, chainId);
 
 export function startCharge() {
   if (hasBrand(state.settings) && !brandPub()) ensureBrandKey().catch(() => {}); // ready for the next charge
@@ -304,11 +304,7 @@ function waitingHtml() {
           ${raw(qrSvg(forQr(qrText(c, c.chainId)), { ecl: 'M', title: t('charge.qrTitle') }))}
           <span class="qr-expired" aria-hidden="true">${t('charge.expiredLabel')}</span>
         </div>
-        <p class="tent-hint">${s.qrKind === 'wallet' ? t('charge.hintWallet') : t('charge.hintWeb')}</p>
-        <div class="seg seg-sm" role="radiogroup" aria-label="${t('charge.qrKind')}">
-          <button type="button" role="radio" aria-checked="${String(s.qrKind === 'web')}" data-act="qrkind" data-v="web">${t('charge.qrWeb')}</button>
-          <button type="button" role="radio" aria-checked="${String(s.qrKind === 'wallet')}" data-act="qrkind" data-v="wallet">${t('charge.qrWallet')}</button>
-        </div>
+        <p class="tent-hint">${t('charge.hintWeb')}</p>
       </div>
       <div class="charge-side">
         <p class="listen" id="listen" aria-live="polite"></p>
@@ -565,10 +561,6 @@ async function onClick(e) {
       render();
       break;
     }
-    case 'qrkind':
-      saveSettings({ ...state.settings, qrKind: b.dataset.v });
-      render();
-      break;
     case 'copy': {
       const ok = await copyText(qrText(c, c.chainId));
       toast(ok ? t('common.copied') : t('common.copyFailed'), ok ? 'info' : 'error');

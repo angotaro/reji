@@ -318,6 +318,7 @@ test('a second register gets the next letter', () => {
 import { metamaskLink, walletDeepLinks } from '../assets/js/wallet.js';
 test('MetaMask links open the payment page inside MetaMask', () => {
   assert.equal(metamaskLink('https://reji.example/pay.html?to=0x1&a=5'), 'https://link.metamask.io/dapp/reji.example/pay.html?to=0x1&a=5');
-  const mm = walletDeepLinks('https://reji.example/pay.html?to=0x1&a=5').find((l) => l.id === 'metamask');
-  assert.equal(mm.href, 'https://link.metamask.io/dapp/reji.example/pay.html?to=0x1&a=5');
+  const links = walletDeepLinks('https://reji.example/pay.html?to=0x1&a=5');
+  assert.equal(links.find((l) => l.id === 'metamask').href, 'https://link.metamask.io/dapp/reji.example/pay.html?to=0x1&a=5');
+  assert.deepEqual(links.map((l) => l.name), [...links.map((l) => l.name)].sort((a, b) => a.localeCompare(b)), 'wallet buttons are alphabetical');
 });

@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS = {
   tipAtt: null, // the receiving wallet's signature agreeing to that, bound to the profile key
   terminal: '', // optional receipt-number prefix when running several registers
   expiryMin: 15,
-  qrKind: 'web', // 'web' (pay page) | 'wallet' (EIP-681)
+  qrKind: 'web', // kept for older backups: the register shows one QR for everyone
   receiptWidth: 58,
   sound: true,
   keypadTax: 10,
@@ -62,7 +62,7 @@ export function normalizeSettings(s) {
   o.network = o.network === 'testnet' ? 'testnet' : 'mainnet';
   o.taxMode = o.taxMode === 'excl' ? 'excl' : 'incl';
   o.expiryMin = clamp(parseInt(o.expiryMin, 10) || 15, 2, 120);
-  o.qrKind = o.qrKind === 'wallet' ? 'wallet' : 'web';
+  o.qrKind = 'web';
   o.receiptWidth = Number(o.receiptWidth) === 80 ? 80 : 58;
   o.keypadTax = [10, 8, 0].includes(Number(o.keypadTax)) ? Number(o.keypadTax) : 10;
   o.regMode = o.regMode === 'keypad' ? 'keypad' : 'menu';

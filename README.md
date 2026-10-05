@@ -91,11 +91,14 @@ Wallet phishing filters (MetaMask and others) block addresses that look like a c
 
 ### When the browser has no wallet
 
+The register shows one QR code for everyone: a link to the payment page. There is deliberately no wallet-specific QR, and Reji never uses payment-request codes (EIP-681), which MetaMask Mobile can reject with "chain ID 137 not found" even when Polygon is in the wallet.
+
+
 Scanning the register's QR code with the phone camera opens Safari or Chrome, which can't sign anything. The pay page then offers, in order:
-1. **Wallet buttons:** reopen the same page inside MetaMask (via `link.metamask.io`), Trust Wallet, Coinbase Wallet or OKX Wallet, where signing works and the page adds or switches the network itself.
+1. **Wallet buttons** (alphabetical: Coinbase Wallet, MetaMask, OKX Wallet, Trust Wallet): reopen the same page inside that wallet app, where signing works and the page adds or switches the network itself.
 2. **If the app doesn't open:** that is, the page is still on screen 3 seconds later (app not installed, link blocked, or iOS opened the link in the browser). The page says so and expands 「ほかのウォレット・アプリが開かないとき」:
    - copy this page's link into any wallet app's built-in browser (wallets not listed, as long as the app has a browser);
-   - for MetaMask, ask staff to switch the register's QR to 「MetaMask用」 and scan it with MetaMask's Scan button. That QR holds MetaMask's documented `https://link.metamask.io/dapp/…` link around the same payment page, not a payment-request (EIP-681) code, which MetaMask Mobile can reject with "chain ID 137 not found" even when Polygon is in the wallet;
+   - scan the register's QR with the wallet app's own QR reader, if it has one and opens links (depends on the app);
    - or send manually (the register also accepts the plain yen amount).
 HashPort Wallet (the wallet most JPYC holders use) can't be reached from any web page: its in-app browser only opens approved sites and it has no links to open. So the pay page leads with 「HashPort Walletで払う」: copy the address in one tap, paste it into HashPort's own 送る screen, and enter the plain yen amount (also one tap to copy). The page then watches the chain and shows the done screen and receipt, as with a wallet-signed payment. The register already accepts the plain yen amount. Only blocks after the page opened count, so a previous customer's payment of the same amount is never taken for this one. Tips aren't offered this way, because a send screen can't add the tip marker.
 
