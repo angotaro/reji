@@ -5,7 +5,7 @@ import { t, getLang, setLang } from './i18n.js';
 import { CHAINS, JPYC, LIMITS, chainName, explorerTx } from './config.js';
 import { addressStatus, checksum, yenToWei, formatUnits, exactUnits, eip681, sameAddress, isTipValue } from './evm.js';
 import { rpc, tokenBalance, nativeBalance, txReceipt, scanTransfers, transfersInReceipt, Watcher, blockNumber } from './rpc.js';
-import { discoverWallets, connect, ensureChain, sendTransfer, watchAsset, walletDeepLinks, isUserRejection, nativeSymbol, pageLinkForWallet, watchDeepLinks } from './wallet.js';
+import { discoverWallets, connect, ensureChain, sendTransfer, watchAsset, walletDeepLinks, isUserRejection, nativeSymbol, pageLinkForWallet, watchDeepLinks, walletRpcFailed, repairChain } from './wallet.js';
 import { receiptUrl, sanitizeReceipt } from './receipt.js';
 import { icon, stampSvg } from './ui.js';
 import { applyBrandColor, cachedBrand, fetchBrand, eventLine, storePageUrl } from './brand.js';
@@ -241,6 +241,14 @@ function panelHtml() {
         ${low ? html`<p class="notice warn">${t('pay.lowJpyc', { chain: chainName(req.chainId) })}${S.elsewhere.length ? ` ${t('pay.elsewhere', { chains: S.elsewhere.map(chainName).join(t('common.sep')) })}` : ''}</p>` : ''}
         ${noGas ? html`<p class="notice warn">${t('pay.noGas', { sym, chain: chainName(req.chainId) })}</p>` : ''}
         ${S.error ? html`<p class="notice error">${S.error}</p>` : ''}
+        ${S.walletRpc ? html`<div class="notice warn wallet-rpc" role="alert">
+          <p class="wallet-rpc-title">${t('pay.walletRpcTitle', { net: chainName(req.chainId) })}</p>
+          <p>${t('pay.walletRpcText', { net: chainName(req.chainId) })}</p>
+          <button type="button" class="btn primary" data-act="fix-rpc">${icon('refresh')}<span>${t('pay.walletRpcFix')}</span></button>
+          <p class="fine">${t('pay.walletRpcManual', { net: chainName(req.chainId) })}</p>
+          <p class="rpc-url"><code class="mono">${CHAINS[req.chainId].rpc[0]}</code><button type="button" class="btn quiet small" data-act="copy-rpc">${icon('copy')}<span>${t('common.copy')}</span></button></p>
+          <p class="fine wallet-rpc-detail">${t('pay.walletRpcDetail', { msg: S.walletRpc })}</p>
+        </div>` : ''}
         <button type="button" class="btn primary big pay-btn" data-act="send"${attr('disabled', low)}>${req.tip ? t('pay.tipSend', { amount: yen(req.amountYen) }) : free ? t('pay.payFree', { amount: yen(req.amountYen) }) : t('pay.payAmount', { amount: yen(req.amountYen) })}</button>
         <p class="fine">${free ? t('pay.freeNote') : t('pay.gasNote', { sym })}</p>
         <button type="button" class="btn quiet" data-act="back">${t('pay.otherWallet')}</button>`;
@@ -367,6 +375,7 @@ async function send() {
   const w = S.wallet;
   S.phase = 'sending';
   S.error = '';
+  S.walletRpc = '';
   render();
   try {
     await ensureChain(w.provider, req.chainId);
@@ -377,6 +386,7 @@ async function send() {
   } catch (e) {
     S.phase = 'connected';
     if (isUserRejection(e)) toast(t('pay.rejected'));
+    else if (walletRpcFailed(e)) S.walletRpc = String(e?.data?.message || e?.message || e || '').slice(0, 140); // the wallet's own network connection
     else S.error = errText(e);
     render();
   }
@@ -606,6 +616,21 @@ app.addEventListener('click', async (e) => {
     case 'recheck':
       waitAndFinish();
       break;
+    case 'fix-rpc':
+      try {
+        await repairChain(S.wallet.provider, req.chainId);
+        S.walletRpc = '';
+        toast(t('pay.walletRpcFixed'));
+        render();
+      } catch (e) {
+        if (!isUserRejection(e)) toast(t('pay.walletRpcFixFailed'), 'warn');
+      }
+      break;
+    case 'copy-rpc': {
+      const ok = await copyText(CHAINS[req.chainId].rpc[0]);
+      toast(ok ? t('common.copied') : t('common.copyFailed'), ok ? 'info' : 'error');
+      break;
+    }
     case 'hp-addr':
     case 'hp-amt': {
       const amt = b.dataset.act === 'hp-amt';

@@ -162,7 +162,8 @@ export function walletInit({ key, name, rdns, account }) {
         case 'eth_requestAccounts': case 'eth_accounts': return [me];
         case 'eth_chainId': return chainId;
         case 'wallet_switchEthereumChain': chainId = params[0].chainId; return null;
-        case 'wallet_addEthereumChain': case 'wallet_watchAsset': return null;
+        case 'wallet_addEthereumChain': (window.__added = window.__added || []).push(params[0]); if (window.__fixOnAdd) delete window.__sendError; return null;
+        case 'wallet_watchAsset': return null;
         case 'personal_sign': {
           const msg = new TextDecoder().decode(m.hexToBytes(params[0]));
           window.__personal = msg;
@@ -174,7 +175,7 @@ export function walletInit({ key, name, rdns, account }) {
           const sep = m.domainSeparator({ ...td.domain, chainId: Number(td.domain.chainId) });
           return m.signatureHex(await m.sign(m.authorizationDigest(sep, td.message), d));
         }
-        case 'eth_sendTransaction': window.__sent = params[0]; return window.__txHash;
+        case 'eth_sendTransaction': if (window.__sendError) throw Object.assign(new Error(window.__sendError), { code: -32603 }); window.__sent = params[0]; return window.__txHash;
         case 'eth_getTransactionReceipt': return null;
         default: throw new Error('unsupported ' + method);
       }

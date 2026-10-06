@@ -322,3 +322,14 @@ test('MetaMask links open the payment page inside MetaMask', () => {
   assert.equal(links.find((l) => l.id === 'metamask').href, 'https://link.metamask.io/dapp/reji.example/pay.html?to=0x1&a=5');
   assert.deepEqual(links.map((l) => l.name), [...links.map((l) => l.name)].sort((a, b) => a.localeCompare(b)), 'wallet buttons are alphabetical');
 });
+
+// ---- a wallet whose own network connection fails is told apart from cancels and reverts ----
+import { walletRpcFailed } from '../assets/js/wallet.js';
+test('wallet connection failures are recognised; cancels, reverts and low funds are not', () => {
+  assert.ok(walletRpcFailed(new Error('RPC 0x89 Custom eth_getBlockByNumber: Unauthorized.')));
+  assert.ok(walletRpcFailed({ code: -32603, message: 'Internal JSON-RPC error.', data: { message: 'Failed to fetch' } }));
+  assert.ok(walletRpcFailed(new Error('HTTP 429 Too Many Requests')));
+  assert.ok(!walletRpcFailed({ code: 4001, message: 'User rejected the request.' }));
+  assert.ok(!walletRpcFailed({ code: -32603, message: 'Internal JSON-RPC error.', data: { message: 'execution reverted: ERC20: transfer amount exceeds balance' } }));
+  assert.ok(!walletRpcFailed(new Error('insufficient funds for gas * price + value')));
+});

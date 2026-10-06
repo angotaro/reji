@@ -102,6 +102,8 @@ Scanning the register's QR code with the phone camera opens Safari or Chrome, wh
    - or send manually (the register also accepts the plain yen amount).
 HashPort Wallet (the wallet most JPYC holders use) can't be reached from any web page: its in-app browser only opens approved sites and it has no links to open. So the pay page leads with 「HashPort Walletで払う」: copy the address in one tap, paste it into HashPort's own 送る screen, and enter the plain yen amount (also one tap to copy). The page then watches the chain and shows the done screen and receipt, as with a wallet-signed payment. The register already accepts the plain yen amount. Only blocks after the page opened count, so a previous customer's payment of the same amount is never taken for this one. Tips aren't offered this way, because a send screen can't add the tip marker.
 
+If the wallet's own connection to the network fails (its saved RPC answers "Unauthorized", rate-limits or doesn't respond), the page says so in plain words instead of showing the raw error. Balances still look fine in that case, because Reji reads them through its own public connections. The page then offers 「ウォレットの接続先を直す」: an `wallet_addEthereumChain` request with Reji's working public RPCs, which many wallets offer to apply. It also shows the address to paste into the wallet's network settings by hand. `walletRpcFailed()` tells these failures apart from cancels, reverts and low balances. Payments in Reji's no-fee mode only need a signature, so they don't depend on the wallet's connection at all.
+
 The owner's phone-signing page has the same help. WalletConnect is deliberately not used: it needs a registered project ID and a company-run relay, which Reji avoids.
 
 ### Fonts and images (nothing from Google)
@@ -130,9 +132,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (50)
+node --test                        # unit tests (51)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (146 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (149 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/landing-shots.mjs       # landing screenshots and demo frames (after e2e)

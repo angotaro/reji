@@ -65,6 +65,21 @@ export async function ensureChain(provider, chainId) {
   }
 }
 
+/** True when the wallet's own connection to the network failed: the RPC saved in the wallet refused
+ *  ("Unauthorized", 401/403, rate limits) or didn't answer. Not a user cancel, not a contract revert. */
+export function walletRpcFailed(e) {
+  if (isUserRejection(e)) return false;
+  const m = String(e?.data?.message || e?.shortMessage || e?.message || e || '');
+  if (/revert|insufficient funds|exceeds balance|nonce too low|gas required exceeds/i.test(m)) return false;
+  return /unauthori[sz]ed|\b40[13]\b|forbidden|rate.?limit|too many requests|\b429\b|failed to fetch|network ?error|could not (?:connect|fetch|detect network)|timed? ?out|bad gateway|\b50[234]\b|ENOTFOUND|getaddrinfo|missing response/i.test(m);
+}
+
+/** Asks the wallet to use Reji's working public connections for this network (EIP-3085). A wallet that
+ *  already has the network may offer to update it, or may ignore the request. */
+export async function repairChain(provider, chainId) {
+  await provider.request({ method: 'wallet_addEthereumChain', params: [addChainParams(chainId)] });
+}
+
 /** Sends JPYC.transfer(to, value). Returns the tx hash. */
 export async function sendTransfer(provider, from, to, value) {
   return provider.request({

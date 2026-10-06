@@ -146,3 +146,12 @@ html, body { overflow-x: clip; }
 @keyframes hp-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .hp-wait .ic { animation: none; } }
 .hp-tipnote { margin: 0 0 1rem; }
+
+/* ---- the wallet's own network connection failed: explain and offer a repair ---- */
+.wallet-rpc { display: grid; gap: 0.5rem; }
+.wallet-rpc p { margin: 0; line-height: 1.7; }
+.wallet-rpc-title { font-weight: 700; }
+.wallet-rpc .btn { justify-self: start; }
+.rpc-url { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+.rpc-url code { font-size: 0.8rem; word-break: break-all; }
+.wallet-rpc-detail { color: var(--ink-soft); word-break: break-all; }

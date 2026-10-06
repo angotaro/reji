@@ -461,6 +461,25 @@ try {
   await crafted.goto(`${BASE}pay.html?tip=1&to=${PAYER}&c=137&a=500&s=${encodeURIComponent('喫茶たまご')}&b=${new URL(storeHref).hash.slice(3)}`);
   ok('a crafted tip link with another address is refused', await seen(crafted, '.notice.error', 15000) && (await crafted.locator('.wallet-btn').count()) === 0);
   await crafted.close();
+  // A wallet whose saved Polygon connection refuses requests (what a tester's wallet showed: "RPC 0x89 Custom eth_getBlockByNumber: Unauthorized.")
+  const rpcTx = '0x' + '7a'.repeat(32);
+  const rpcPg = await cust.newPage();
+  watch(rpcPg, 'wallet with a broken connection', errors);
+  await rpcPg.addInitScript((tx) => { window.__sendError = 'RPC 0x89 Custom eth_getBlockByNumber: Unauthorized.'; window.__fixOnAdd = true; window.__txHash = tx; }, rpcTx);
+  await rpcPg.goto(`${BASE}pay.html?to=${MERCHANT}&c=137&a=7&u=777&s=${encodeURIComponent('喫茶たまご')}&r=20260928-0077&e=${Math.floor(Date.now() / 1000) + 600}`);
+  await rpcPg.waitForSelector('.wallet-btn');
+  await rpcPg.tap('.wallet-btn');
+  await rpcPg.waitForSelector('.pay-btn:not([disabled])');
+  await rpcPg.tap('.pay-btn');
+  ok('broken wallet connection: explained in plain words, with a repair button', await seen(rpcPg, '.wallet-rpc', 10000) && (await rpcPg.locator('[data-act="fix-rpc"]').count()) === 1 && (await rpcPg.locator('.notice.error').count()) === 0);
+  await rpcPg.screenshot({ path: `${OUT}/19c-pay-wallet-rpc.png`, fullPage: true });
+  await rpcPg.tap('[data-act="fix-rpc"]');
+  ok('repair: the wallet is asked to use a working Polygon connection', await rpcPg.evaluate(() => (window.__added || []).some((p) => p.chainId === '0x89' && p.rpcUrls?.[0]?.startsWith('https://'))));
+  addTransfer({ from: CUSTOMER, value: 7n * UNIT + 777n, tx: rpcTx });
+  await rpcPg.waitForSelector('.pay-btn:not([disabled])');
+  await rpcPg.tap('.pay-btn');
+  ok('after the repair the payment goes through', await seen(rpcPg, '.done-title', 20000));
+  await rpcPg.close();
   await page.click('[data-act="next"]');
 
   // ---- owner-only actions: return gas (signed here), confirm again from a phone ----
