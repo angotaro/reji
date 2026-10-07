@@ -155,3 +155,4 @@ html, body { overflow-x: clip; }
 .rpc-url { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
 .rpc-url code { font-size: 0.8rem; word-break: break-all; }
 .wallet-rpc-detail { color: var(--ink-soft); word-break: break-all; }
+.hp-card .panel-title { text-wrap: balance; word-break: auto-phrase; }
