@@ -124,6 +124,8 @@ The register creates its own gas wallet (key only on that device), the owner fun
 
 ## Security
 
+Please report vulnerabilities privately, not in public issues: see [SECURITY.md](SECURITY.md).
+
 Protections: strict CSP (no inline or third-party scripts), `frame-ancestors 'none'`, HSTS, nosniff; all dynamic HTML escaped; no store private keys ever; exact-match relaying with a cap of 3 attempts per charge; authenticated relay replies; second-source payment confirmation; signed and re-verified owner record; strict parsing of signing requests (`sign.html` signs only Reji's own message format); CSV cells can't start formulas; PIN lock with growing lockout.
 
 Limits to know: someone with the unlocked register and developer tools can change local data (the owner strip makes address edits visible); browser extensions on the register can read the page, so use a dedicated browser profile without extensions; customers should scan only the QR on the register screen; the gas wallet is a hot key, so keep a small float. This is a careful review plus automated tests, not a professional audit.

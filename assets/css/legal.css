@@ -41,3 +41,7 @@ body.legal { margin: 0; background: var(--mist); color: var(--ink); font-family:
 .lg-note { color: var(--ink-soft); }
 .lg-warn { padding: 0.8rem 1rem; border-radius: 10px; background: #fff4e5; color: #7a4300; line-height: 1.75; }
 .lg-main code { padding: 0.05em 0.35em; border-radius: 5px; background: var(--mist); font-size: 0.9em; word-break: break-all; }
+
+/* questions in help pages: smaller than section headings, kept close to their answers */
+.lg-main h3 { margin: 1.4rem 0 0.25rem; font-size: 1.02rem; line-height: 1.6; }
+.lg-main h3 + p { margin-top: 0; }
