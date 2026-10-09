@@ -12,6 +12,9 @@ Reji は支払いを扱うアプリです。脆弱性のご報告を歓迎しま
 Report privately through GitHub: open this repository's **Security** tab and choose **Report a vulnerability**. Only the maintainers can see these reports.
 GitHub の非公開の報告をお使いください：このリポジトリの「Security」タブ →「Report a vulnerability」。報告は管理者だけが見られます。
 
+If you can't use GitHub, email reji@mail.grokbot.com and start the subject with "[Security]".
+GitHub を使えない場合は、件名の最初に「[Security]」と付けて、reji@mail.grokbot.com へお送りください。
+
 Please include / 報告に含めていただきたいこと:
 - what is affected, and the steps to reproduce it / 影響する箇所と、再現の手順
 - the impact you expect, for example funds going to the wrong address, a forged receipt or script injection / 想定される影響（例：別のアドレスに送金される、レシートの偽造、スクリプトの埋め込み）

@@ -122,6 +122,10 @@ The owner signs a fixed-format message (`personal_sign`) with the receiving wall
 
 The register creates its own gas wallet (key only on that device), the owner funds it with a little POL, and for each Polygon charge the pay link carries a random channel id (`n`) and a one-off public key (`k`). The customer signs an EIP-3009 authorization (about 150 s validity, chain time) and publishes it on Nostr; the register relays it only if it exactly matches the charge on screen and replies **signed with the charge's key**. The customer page accepts only replies with that key and a valid signature, so a relay or a bystander can't fake a "failed" answer to trigger a second payment. With no answer, the page waits until the authorization expires on-chain before offering a normal payment. Below 0.02 POL, charges use normal payments.
 
+## Contact
+
+Support and questions from stores and users: reji@mail.grokbot.com. Developers: please ask in GitHub issues, so answers stay public for everyone. Security problems: see [SECURITY.md](SECURITY.md). Reji never asks for seed phrases or private keys, and support emails only come from this address.
+
 ## Integrating with other apps
 
 Other web apps, platforms or 3D spaces can open Reji's payment page with a link and confirm payment on-chain: no server, API or keys. See [docs/INTEGRATION.md](docs/INTEGRATION.md) (Japanese and English).
