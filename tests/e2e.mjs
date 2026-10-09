@@ -461,6 +461,12 @@ try {
   await crafted.goto(`${BASE}pay.html?tip=1&to=${PAYER}&c=137&a=500&s=${encodeURIComponent('喫茶たまご')}&b=${new URL(storeHref).hash.slice(3)}`);
   ok('a crafted tip link with another address is refused', await seen(crafted, '.notice.error', 15000) && (await crafted.locator('.wallet-btn').count()) === 0);
   await crafted.close();
+  const borrowed = await cust.newPage();
+  watch(borrowed, 'payment link borrowing a store profile', errors);
+  await borrowed.goto(`${BASE}pay.html?to=${PAYER}&c=137&a=500&u=42&s=${encodeURIComponent('喫茶たまご')}&r=20260928-0099&e=${Math.floor(Date.now() / 1000) + 600}&b=${new URL(storeHref).hash.slice(3)}`);
+  ok('a payment link that borrows the store profile but pays another address is refused', await seen(borrowed, '.notice.error', 15000)
+    && (await borrowed.locator('.wallet-btn').count()) === 0 && (await borrowed.locator('.hp-card').count()) === 0 && (await borrowed.locator('.manual').count()) === 0);
+  await borrowed.close();
   // A wallet whose saved Polygon connection refuses requests (what a tester's wallet showed: "RPC 0x89 Custom eth_getBlockByNumber: Unauthorized.")
   const rpcTx = '0x' + '7a'.repeat(32);
   const rpcPg = await cust.newPage();

@@ -88,7 +88,8 @@ export const hasBrand = (s) => !!(s && (validLogo(s.logo) || validColor(s.brandC
 export function brandProfile(s) {
   const links = cleanLinks([s.storeLink, ...(s.links || [])]);
   return {
-    v: 1, name: clean(s.storeName, 60), color: safeColor(s.brandColor), logo: validLogo(s.logo), msg: clean(s.footer, 120),
+    v: 1, name: clean(s.storeName, 60), addr: /^0x[0-9a-fA-F]{40}$/.test(String(s.address || '')) ? s.address : '', // where payments go: pay links are checked against it
+    color: safeColor(s.brandColor), logo: validLogo(s.logo), msg: clean(s.footer, 120),
     link: links[0] || '', links, tagline: clean(s.tagline, 40), people: clean(s.people, 40), about: cleanText(s.about, 300),
     event: { name: clean(s.eventName, 40), space: clean(s.eventSpace, 20) },
     ...(tipOffer(s) ? { tip: tipOffer(s) } : {}),
@@ -157,6 +158,7 @@ export function parseBrand(json, pub = '') {
       tagline: clean(o.tagline, 40), people: clean(o.people, 40), about: cleanText(o.about, 300), event: { name: clean(ev.name, 40), space: clean(ev.space, 20) },
       tip: pub ? verifyTip(o.tip, pub) : null,
       menu: parseMenu(o.menu),
+      addr: /^0x[0-9a-fA-F]{40}$/.test(String(o.addr || '')) ? String(o.addr) : '',
     };
   } catch {
     return null;

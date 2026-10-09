@@ -50,7 +50,12 @@ function parse() {
 const req = parse();
 const S = { phase: req ? 'loading' : 'invalid', wallets: [], wallet: null, account: '', bal: null, gas: null, elsewhere: [], tx: '', error: '', receiptLink: '', paidAt: 0, relay: null, relayFailed: false, pool: null, waitUntil: 0 };
 // The store's look: colour at once from the link, logo/message/link from its signed profile.
+// A store's signed profile names its receiving address. A link that borrows a real store's profile but
+// pays another address is refused, so nobody can show a store's verified look beside their own address.
+// A profile without an address (published before this check) is simply not shown.
+const addrOk = (b) => !!b?.addr && sameAddress(b.addr, req.to);
 S.brand = req?.brandPub ? cachedBrand(req.brandPub) : null;
+if (S.brand && !req.tip && !addrOk(S.brand)) S.brand = null; // a stale copy decides nothing: the fresh fetch does
 if (req) applyBrandColor(document.documentElement, req.brandColor || S.brand?.color || '');
 // A tip link is trusted only when the store's own signed profile agrees on where tips go
 // (the wallet signed it); a crafted link with another address is refused.
@@ -60,7 +65,11 @@ function loadBrand() {
   if (!req?.brandPub) return;
   fetchBrand(req.brandPub).then((b) => {
     if (req.tip) S.tipCheck = b ? (tipOk(b) ? 'ok' : b.tip ? 'bad' : 'off') : S.tipCheck === 'ok' ? 'ok' : 'unknown';
-    if (b) {
+    if (b && !req.tip && !addrOk(b)) {
+      S.brand = null;
+      S.brandBad = !!b.addr; // a different address: refuse. No address yet: just don't show the profile.
+      if (S.brandBad) { manualWatch?.stop?.(); manualWatch = null; }
+    } else if (b) {
       S.brand = b;
       if (!req.brandColor) applyBrandColor(document.documentElement, b.color);
     }
@@ -157,7 +166,7 @@ function hpHtml() {
 // never taken for this one.
 let manualWatch = null;
 async function watchManual() {
-  if (manualWatch || !req || req.tip || S.wallets.length || S.tx || S.phase !== 'ready' || expired()) return;
+  if (manualWatch || !req || req.tip || S.brandBad || S.wallets.length || S.tx || S.phase !== 'ready' || expired()) return;
   manualWatch = 'starting';
   let head = null;
   try { head = await blockNumber(req.chainId); } catch { head = null; }
@@ -204,6 +213,10 @@ function tipGateHtml() {
 }
 
 function panelHtml() {
+  if (S.brandBad && !['invalid', 'done'].includes(S.phase)) {
+    return html`<div class="notice error" role="alert"><p>${t('pay.brandBad')}</p></div>
+      <a class="btn ghost" href="${storePageUrl(req.brandPub)}">${icon('store')}<span>${t('pay.brandBadStore')}</span></a>`;
+  }
   if (req?.tip && S.tipCheck !== 'ok' && !['invalid', 'done'].includes(S.phase)) return tipGateHtml();
   const name = S.wallet?.name || '';
   switch (S.phase) {
@@ -366,6 +379,7 @@ async function pick(w) {
 
 async function send() {
   if (req.tip && S.tipCheck !== 'ok') return; // never send a tip that was not verified
+  if (S.brandBad) return; // never pay through a link that borrows another store's profile
   if (expired()) {
     S.phase = 'expired';
     render();

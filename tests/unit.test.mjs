@@ -333,3 +333,13 @@ test('wallet connection failures are recognised; cancels, reverts and low funds 
   assert.ok(!walletRpcFailed({ code: -32603, message: 'Internal JSON-RPC error.', data: { message: 'execution reverted: ERC20: transfer amount exceeds balance' } }));
   assert.ok(!walletRpcFailed(new Error('insufficient funds for gas * price + value')));
 });
+
+// ---- the signed profile names the receiving address, so borrowed profiles can be spotted ----
+import { brandProfile } from '../assets/js/brand.js';
+test('signed store profile carries the receiving address; junk addresses are dropped', () => {
+  assert.equal(brandProfile({ storeName: 'A', address: '0x' + 'ab'.repeat(20) }).addr, '0x' + 'ab'.repeat(20));
+  assert.equal(brandProfile({ storeName: 'A', address: 'nope' }).addr, '');
+  assert.equal(parseBrand(JSON.stringify({ name: 'A', addr: '0x' + 'cd'.repeat(20) })).addr, '0x' + 'cd'.repeat(20));
+  assert.equal(parseBrand(JSON.stringify({ name: 'A', addr: '<script>' })).addr, '');
+  assert.equal(parseBrand(JSON.stringify({ name: 'A' })).addr, '');
+});
