@@ -36,7 +36,7 @@ for (const h of [site && new URL(site).hostname, env.CF_PAGES_URL && new URL(env
 if (!site) console.log('tip: on Cloudflare Workers (not Pages) set SITE_URL so link previews get absolute addresses');
 
 const abs = (p) => `${site}/${p.replace(/^\.?\//, '')}`;
-const pages = ['index.html', 'app.html', 'pay.html', 'receipt.html', 'store.html', 'sign.html', 'terms.html', 'privacy.html', 'backup.html'];
+const pages = ['index.html', 'app.html', 'pay.html', 'receipt.html', 'store.html', 'sign.html', 'terms.html', 'privacy.html', 'backup.html', 'ideas.html'];
 if (site) {
   for (const f of pages) {
     if (!existsSync(f)) continue;

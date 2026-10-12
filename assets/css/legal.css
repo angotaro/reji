@@ -45,3 +45,9 @@ body.legal { margin: 0; background: var(--mist); color: var(--ink); font-family:
 /* questions in help pages: smaller than section headings, kept close to their answers */
 .lg-main h3 { margin: 1.4rem 0 0.25rem; font-size: 1.02rem; line-height: 1.6; }
 .lg-main h3 + p { margin-top: 0; }
+
+/* ---- ideas page ---- */
+.lg-video { display: block; width: 100%; height: auto; border: 1px solid var(--line-soft); border-radius: 12px; background: #000; }
+.idea-index { columns: 2 16rem; column-gap: 2rem; margin: 0.6rem 0 1.4rem; }
+.idea-index li { break-inside: avoid; margin: 0.15rem 0; }
+.idea { scroll-margin-top: 1rem; }

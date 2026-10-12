@@ -112,7 +112,7 @@ const infoSec = (s) => {
     <div class="info-edit">
       <label class="field"><span class="label">${t('info.tagline')}</span><input name="tagline" value="${s.tagline}" maxlength="40" placeholder="${t('info.taglinePh')}"><small class="hint">${t('info.taglineHint')}</small></label>
       <label class="field"><span class="label">${t('info.people')}</span><input name="people" value="${s.people}" maxlength="40" placeholder="${t('info.peoplePh')}"><small class="hint">${t('info.peopleHint')}</small></label>
-      <label class="field"><span class="label">${t('info.about')}</span><textarea name="about" rows="4" maxlength="300" placeholder="${t('info.aboutPh')}">${s.about}</textarea><small class="hint">${t('info.aboutHint')}</small></label>
+      <label class="field"><span class="label">${t('info.about')}</span><textarea name="about" rows="4" maxlength="300" placeholder="${t('info.aboutPh')}">${s.about}</textarea><small class="hint">${t('info.aboutHint')} <a href="ideas.html" target="_blank" rel="noopener">${t('info.ideas')}</a></small></label>
       <fieldset class="field"><legend class="label">${t('info.links')}</legend>
         <div class="link-list">${links.map((v, i) => html`<input name="link${i + 1}" type="url" inputmode="url" value="${v}" placeholder="${['https://www.instagram.com/…', 'https://x.com/…', 'https://….booth.pm/', 'https://…'][i]}" autocomplete="off" spellcheck="false" autocapitalize="off" aria-label="${t('info.linkN', { n: i + 1 })}">`)}</div>
         <small class="hint">${t('info.linksHint')}</small><small class="field-error" data-err="links"></small></fieldset>

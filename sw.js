@@ -2,7 +2,7 @@
 // (POST, cross-origin) always go straight to the network.
 const VERSION = 'reji-0.1.2';
 const CORE = [
-  './', './index.html', './app.html', './pay.html', './receipt.html', './store.html', './sign.html', './terms.html', './privacy.html', './backup.html', './manifest.webmanifest',
+  './', './index.html', './app.html', './pay.html', './receipt.html', './store.html', './sign.html', './terms.html', './privacy.html', './backup.html', './ideas.html', './manifest.webmanifest',
   './assets/css/base.css', './assets/css/app.css', './assets/css/pay.css', './assets/css/legal.css', './assets/css/landing.css',
   './assets/js/landing.js', './assets/js/secp256k1.js', './assets/js/relayer.js', './assets/js/nostr.js',
   './assets/js/gas.js', './assets/js/owner.js', './assets/js/sign-page.js', './assets/js/ownermsg.js', './assets/js/providers.js', './assets/js/onboard.js', './assets/js/brand.js', './assets/js/avif.js', './assets/js/storecard.js', './assets/js/backup.js', './assets/js/pop.js', './assets/js/store-page.js', './assets/fonts/reji-dot.woff', './assets/js/brandui.js',
