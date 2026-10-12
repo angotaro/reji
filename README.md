@@ -128,7 +128,7 @@ Support and questions from stores and users: reji@mail.grokbot.com. Developers: 
 
 ## Integrating with other apps
 
-Other web apps, platforms or 3D spaces can open Reji's payment page with a link and confirm payment on-chain: no server, API or keys. See [docs/INTEGRATION.md](docs/INTEGRATION.md) (Japanese and English).
+Other web apps, platforms or 3D spaces can open Reji's payment page with a link and confirm payment on-chain: no server, API or keys. See [docs/INTEGRATION.md](docs/INTEGRATION.md) (Japanese and English). [docs/examples/order-matcher.mjs](docs/examples/order-matcher.mjs) is a tested reference for matching many orders across many stores.
 
 ## Security
 
@@ -142,9 +142,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (51)
+node --test                        # unit tests (58)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (149 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (150 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/landing-shots.mjs       # landing screenshots and demo frames (after e2e)

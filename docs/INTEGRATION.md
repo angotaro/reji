@@ -56,15 +56,51 @@ Rejiには、運営のサーバーもAPIもありません。リンクでお支�
 - 同じ受取アドレスを、Rejiのレジと同時に使うと、端数が重なることがあります。連携には、**別の受取アドレス**（ウォレット）を使うのがおすすめです。
 - 公開ノードは、一度に調べられるブロックの範囲や回数に制限があります。少しずつ（例：500ブロックずつ）調べ、エラーのときは時間をおいて再試行し、複数のノードを使い分けます。Rejiが使っている公開ノードの一覧は `assets/js/config.js` にあります。
 
-### 4. サンプルコード（JavaScript、ライブラリ不要）
+### 4. 注文の扱い（複数の注文・複数のお店）
+
+**注文番号**
+
+- `r` は、お支払いページとレシートに表示するための文字列です（40文字まで）。**ブロックチェーンには記録されません。**
+- 送金と注文を結びつけるのは、チェーン・受取アドレス・金額・端数 `u` の組み合わせです。注文ごとに、チェーンID、受取アドレス、金額、`u`、リンクを作ったときのブロック、有効期限を保存してください。
+- 注文番号には、お客様が読みやすい英数字とハイフン（例：`SP-0001`）がおすすめです。
+
+**重複の判定**
+
+- 1つの送金は、`チェーンID ＋ tx hash ＋ logIndex` で決まります。この組み合わせを記録し、二度と使いません。
+- 送金が注文に合ったら、確認が終わる前に「予約」します。確認中の送金が、ほかの注文に使われないようにするためです。
+- 端数 `u` は、**同じアドレス・同じ金額で受付中の注文どうし**で重ならないようにします。支払い済みや期限切れの注文の `u` は、また使えます。
+- 端数のない送金（コピーして送る）は、同じアドレスでその金額の受付中の注文がひとつだけのときに限って結びつけます。ふたつ以上あるときは、人が確認します。
+- 注文を作るより前のブロックの送金は、その注文に使いません。前のお客様の支払いを取り違えないためです。
+
+**複数のお店**
+
+- お金は、プラットフォームを通さず、各お店の受取アドレスに直接届くようにします。
+- 各お店の受取アドレスは、お店から受け取って登録します。お店がRejiのプロフィール（お店のページ）を持っていれば、そのIDを `b` に入れてください。Rejiが受取アドレスと一致するかを確かめ、一致しないリンクでは支払いを止めるので、登録ミスや改ざんへの安全装置になります。
+- 照合は、注文ごとではなく、お店ごとに新しいブロックをまとめて調べると効率的です。
+- そのお店がRejiのレジも使っている場合は、連携用に**別の受取アドレス**を用意してもらいます。端数の重なりと、レジの売上が照合に混ざるのを防ぐためです。
+
+**期限切れと、遅れて届いた支払い**
+
+- 有効期限 `e` を過ぎると、Rejiのお支払いページでは支払えなくなります。新しいリンクを作り直してください。
+- 期限の直前に送られた支払いが、期限のあとのブロックに記録されることがあります。数分の猶予を設け、それを過ぎて届いた支払いは人が確認します。
+
+**返金**
+
+- お金はお店のウォレットに直接届くので、返金はお店のウォレットからお客様のウォレットへJPYCを送り返します。プラットフォームでは、注文の状態を更新します。
+
+**参考実装**
+
+- ここまでのルールをまとめて実装した参考コードが `docs/examples/order-matcher.mjs` にあります（テスト：`tests/order-matcher.test.mjs`）。データはメモリ上に置いているので、実際の運用ではデータベースに置き換えてください。
+
+### 5. サンプルコード（JavaScript、ライブラリ不要）
 
 下の「Sample code」をご覧ください（日本語・英語で共通です）。
 
-### 5. テスト
+### 6. テスト
 
 Polygon Amoy（`c=80002`）と、JPYC公式の配布ページ（https://faucet.jpyc.co.jp ）のテスト用JPYCで、無料で試せます。
 
-### 6. そのほか
+### 7. そのほか
 
 - 報酬ポイントや独自トークンは、この流れに入れません。Rejiが扱うのは、お客様からお店へのJPYCの直接の支払いだけです。
 - Rejiは無料のオープンソース（MITライセンス）で、運営のサーバーやサービス保証（SLA）はありません。
@@ -123,11 +159,47 @@ Rules:
 - Using the same receiving address with a Reji register at the same time can make fractions collide. **Use a separate receiving address** (wallet) for integrations.
 - Public nodes limit block ranges and request rates. Query in small steps (for example 500 blocks), back off on errors and spread requests over several nodes. The public nodes Reji uses are listed in `assets/js/config.js`.
 
-### 4. Testing
+### 4. Handling orders (many orders, many stores)
+
+**Order numbers**
+
+- `r` is text shown on the payment page and the receipt (up to 40 characters). **It is not recorded on the blockchain.**
+- A transfer is tied to an order by the combination of chain, receiving address, amount and fraction `u`. For each order, store the chain ID, receiving address, amount, `u`, the block when you created the link, and the expiry.
+- Order numbers customers can read easily work best: letters, digits and hyphens (for example `SP-0001`).
+
+**Duplicate detection**
+
+- A transfer is identified by `chain ID + tx hash + log index`. Record that combination and never use it again.
+- When a transfer matches an order, reserve it before its confirmation finishes, so a transfer being checked can't be taken by another order.
+- Keep `u` different **between open orders with the same address and amount**. The `u` of paid or expired orders can be reused.
+- Tie a transfer without the fraction (copy-and-send) to an order only when exactly one open order for that address has that amount. If there are two or more, review it by hand.
+- Never use a transfer from a block before the order was created, so a previous customer's payment can't be mistaken for it.
+
+**Many stores**
+
+- Money should go straight to each store's receiving address, never through the platform.
+- Get each store's receiving address from the store itself. If the store has a Reji profile (store page), put its ID in `b`: Reji checks that it names the same receiving address and refuses links that don't match, which guards against registration mistakes or tampering.
+- Scan new blocks once per store rather than once per order.
+- If a store also runs a Reji register, ask it for a **separate receiving address** for your platform, so fractions can't collide and register sales don't mix into your matching.
+
+**Expiry and late payments**
+
+- After the expiry `e`, Reji's payment page no longer accepts payment. Create a new link instead.
+- A payment sent just before expiry can land in a block after it. Allow a few minutes' grace, and review anything arriving later by hand.
+
+**Refunds**
+
+- Money arrives directly in the store's wallet, so refunds are JPYC sent back from the store's wallet to the customer's. Your platform updates the order's status.
+
+**Reference implementation**
+
+- `docs/examples/order-matcher.mjs` implements all of these rules (tests: `tests/order-matcher.test.mjs`). It keeps data in memory; replace that with your database in production.
+
+### 5. Testing
 
 Use Polygon Amoy (`c=80002`) with free test JPYC from JPYC's faucet (https://faucet.jpyc.co.jp).
 
-### 5. Other notes
+### 6. Other notes
 
 - Keep reward points and your own tokens out of this flow. Reji handles only direct JPYC payments from customer to store.
 - Reji is free, open source (MIT) software with no server and no service guarantee (SLA).
