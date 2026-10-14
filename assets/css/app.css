@@ -695,3 +695,15 @@ code.key { display: block; padding: 0.75rem; border-radius: 8px; background: var
 
 /* the hint under the QR: break at phrases, never leave one character alone (「…ください／い」) */
 .tent-hint { text-wrap: balance; word-break: auto-phrase; }
+
+/* ---- add to Home Screen: CSS shows the part that fits this browser (html[data-install]) ---- */
+.install-card { margin: 1rem 0; padding: 0.9rem 1rem; border: 1px solid var(--line-soft); border-radius: 14px; background: #fff; text-align: left; }
+.install-card .ic-title { margin: 0 0 0.45rem; font-weight: 700; }
+.install-card [data-for] { display: none; }
+.install-card [data-for] p { margin: 0 0 0.55rem; line-height: 1.7; }
+.install-card ol { margin: 0 0 0.55rem; padding-left: 1.3rem; line-height: 1.8; }
+html:not([data-install]) .install-card { display: none; }
+html[data-install="prompt"] .install-card [data-for="prompt"], html[data-install="ios"] .install-card [data-for="ios"],
+html[data-install="inapp"] .install-card [data-for="inapp"], html[data-install="other"] .install-card [data-for="other"],
+html[data-install="installed"] .install-card [data-for="installed"] { display: block; }
+.install-card .ic-title { text-wrap: balance; word-break: auto-phrase; }

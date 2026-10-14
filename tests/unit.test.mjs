@@ -343,3 +343,13 @@ test('signed store profile carries the receiving address; junk addresses are dro
   assert.equal(parseBrand(JSON.stringify({ name: 'A', addr: '<script>' })).addr, '');
   assert.equal(parseBrand(JSON.stringify({ name: 'A' })).addr, '');
 });
+
+// ---- add to Home Screen: which help each browser gets ----
+import { installStateFor } from '../assets/js/install.js';
+test('install help: installed, in-app browser, install prompt, iPhone/iPad, others', () => {
+  assert.equal(installStateFor({ isStandalone: true, inApp: false, hasPrompt: true, isIos: true }), 'installed');
+  assert.equal(installStateFor({ isStandalone: false, inApp: true, hasPrompt: false, isIos: true }), 'inapp');
+  assert.equal(installStateFor({ isStandalone: false, inApp: false, hasPrompt: true, isIos: false }), 'prompt');
+  assert.equal(installStateFor({ isStandalone: false, inApp: false, hasPrompt: false, isIos: true }), 'ios');
+  assert.equal(installStateFor({ isStandalone: false, inApp: false, hasPrompt: false, isIos: false }), 'other');
+});

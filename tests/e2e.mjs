@@ -48,12 +48,17 @@ try {
   ok('landing: CTA opens the register', (await page.getAttribute('.lp-hero .btn.primary', 'href')) === 'app.html');
   await page.click('[data-lang-toggle]');
   ok('landing: English toggle', (await page.getAttribute('html', 'data-lang')) === 'en' && (await page.locator('.lp-hero h1 [lang="en"]').isVisible()));
-  ok('landing: images are AVIF (JPEG only for older browsers), poster too', await page.evaluate(async () => {
+  ok('landing: images are AVIF (JPEG only for older browsers); the video poster is JPEG so every browser shows it', await page.evaluate(async () => {
     const imgs = [...document.querySelectorAll('.lp-stage img, .lp-steps img')];
     for (const i of imgs) i.loading = 'eager';
     await Promise.all(imgs.map((i) => (i.complete && i.naturalWidth ? 1 : new Promise((r) => { i.onload = i.onerror = r; setTimeout(r, 5000); }))));
-    return imgs.length >= 8 && imgs.every((i) => i.naturalWidth > 0 && /\.avif$/.test(i.currentSrc)) && /\.avif$/.test(document.querySelector('.lp-video video').poster);
+    return imgs.length >= 8 && imgs.every((i) => i.naturalWidth > 0 && /\.avif$/.test(i.currentSrc)) && /\.jpg$/.test(document.querySelector('.lp-video video').poster);
   }));
+  await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; }' }); // like a browser where the animation doesn't run
+  ok('landing: without the animation, the first screens still show in both frames', await page.evaluate(() =>
+    ['.lp-stage img.s1', '.lp-stage img.p1'].every((q) => getComputedStyle(document.querySelector(q)).opacity === '1')));
+  await page.reload();
+  await page.waitForSelector('.lp-hero');
   ok('landing: footer links the terms and privacy policy', (await page.locator('.lp-foot a[href="terms.html"]').count()) === 1 && (await page.locator('.lp-foot a[href="privacy.html"]').count()) === 1);
   await page.click('[data-lang-toggle]');
   await page.click('.lp-hero .btn.primary');
@@ -137,6 +142,12 @@ try {
   ok('setup summary: owner done, PIN still recommended', (await page.getAttribute('.ob-summary li:nth-child(3)', 'data-st')) === 'done' && (await page.getAttribute('.ob-summary li:nth-child(8)', 'data-st')) === 'warn' && (await page.getAttribute('.ob-summary li:nth-child(7)', 'data-st')) === 'done');
   await sleep(1600);
   await page.screenshot({ path: `${OUT}/01e-setup-done.png` });
+  ok('setup done: how to use Reji as an app (menu steps where the browser offers no prompt)', (await page.locator('.ob .install-card').count()) === 1 && await page.locator('.ob .install-card [data-for="other"]').isVisible());
+  ok('setup done: the browser is asked to keep Reji’s data', await page.evaluate(() => !!localStorage.getItem('reji:persist:v1')));
+  await page.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = async () => { window.__prompted = true; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); dispatchEvent(e); });
+  ok('setup done: when the browser offers installing, it becomes a one-tap button', await page.locator('.ob .install-card [data-install]').isVisible());
+  await page.click('.ob .install-card [data-install]');
+  ok('the button opens the browser’s own install prompt', await page.evaluate(() => window.__prompted === true));
   await page.click('[data-ob="finish"]');
   await page.waitForSelector('.register');
   ok('owner saved with settings', (await settingsOf(page)).owner?.address === MERCHANT);
@@ -437,7 +448,7 @@ try {
   ok('store page: tip address checked on this phone, same as its receipts', (await storePg.locator('.tip-checks .ok').count()) === 2 && (await storePg.locator('.tip-kv code').textContent()) === MERCHANT);
   await storePg.click('.tip-amt[data-a="500"]');
   ok('store page: amount chosen, send button names it', /500/.test(await storePg.locator('.tip-go').textContent()) && !(await storePg.locator('.tip-go').isDisabled()));
-  await storePg.locator('.sp-tip').screenshot({ path: `${OUT}/23-store-tip.png` });
+  await storePg.waitForTimeout(300).then(() => storePg.locator('.sp-tip').screenshot({ path: `${OUT}/23-store-tip.png` })).catch(() => storePg.waitForTimeout(600).then(() => storePg.locator('.sp-tip').screenshot({ path: `${OUT}/23-store-tip.png` }))); // the page may redraw once when the fresh profile arrives
   const tipTx = '0x' + '8a'.repeat(32);
   addTransfer({ from: CUSTOMER, value: 500n * UNIT + BigInt(LIMITS.tipMark), tx: tipTx });
   await storePg.addInitScript((tx) => { window.__txHash = tx; }, tipTx);
@@ -717,6 +728,13 @@ try {
     return (await (await caches.open('reji-0.1.2')).keys()).length;
   }, core).catch((e) => String(e));
   ok(`service worker caches the app shell (${core} files)`, Number(sw) >= core, sw);
+
+  const ictx = await context(browser, { viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1' });
+  const ip = await ictx.newPage();
+  await ip.goto(`${BASE}app.html`);
+  await ip.waitForSelector('.ob-choice');
+  ok('iPhone: Reji knows to show the Share → Add to Home Screen steps', (await ip.evaluate(() => document.documentElement.dataset.install)) === 'ios');
+  await ictx.close();
 
   // ---- moving the store to another device (お店の引き継ぎ) ----
   await page.evaluate(() => localStorage.setItem('reji:lang', 'ja')); // the guide page is in Japanese

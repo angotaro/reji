@@ -1,5 +1,7 @@
 # Reji (レジ) v0.1.2
 
+**日本語:** [README.ja.md](README.ja.md)
+
 A free point-of-sale web app for taking **JPYC** in a shop. Customers scan a QR code and pay from their own wallet; the money goes straight to the store's wallet. No sign-up, no monthly fee, no payment processing fee, no backend of ours.
 
 - `index.html` landing page · `app.html` register · `pay.html` customer payment · `receipt.html` saved e-receipts · `sign.html` owner's phone signing
@@ -85,6 +87,15 @@ A store can accept tips from its store page: a collapsed, optional 「このお�
 - **Line breaks:** Japanese labels break only at natural points (`word-break: keep-all`).
 - **LINE:** QR codes carry `openExternalBrowser=1`, so LINE's QR reader opens them in Safari or Chrome, where wallet apps and saved receipts live. Other in-app browsers get a short hint.
 
+### Using Reji as an app (PWA)
+
+Reji installs like an app: the manifest opens the register (`app.html`) in its own window, with icons for every platform, and the service worker loads it without a connection. The setup-complete screen and Settings → このアプリについて show install help that fits the browser:
+- **Chrome, Edge and Android:** a one-tap button using the browser's own install prompt.
+- **iPhone and iPad:** the Share → 「ホーム画面に追加」 steps, plus a note and a backup button. iOS keeps the Home Screen app's data separate from Safari, so a store set up in Safari is moved over with the backup.
+- **In-app browsers:** a hint to open Safari or Chrome first.
+
+Once a store is set up, Reji asks the browser to keep its data out of automatic cleanup (`navigator.storage.persist()`, at most once a month).
+
 ### Choosing the site address
 
 Wallet phishing filters (MetaMask and others) block addresses that look like a crypto brand: `reji.jpyc.workers.dev` gets a full-screen "this site may be harmful" warning before the page even opens. Use a neutral project name (for example `reji-pos.pages.dev`) or your own domain. `tools/build.mjs` warns in the build log, and Settings → このお店の情報 shows a warning, if the address contains words such as jpyc, metamask, hashport, wallet or airdrop. Moving to a new address doesn't carry a store's data across (it lives in the browser, per address): back up on the old address and restore on the new one.
@@ -142,9 +153,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (58)
+node --test                        # unit tests (59)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (150 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (156 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/landing-shots.mjs       # landing screenshots and demo frames (after e2e)

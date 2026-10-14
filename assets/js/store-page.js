@@ -102,6 +102,8 @@ async function myReceipts() {
 }
 
 function render() {
+  // Keep the cursor where the customer was typing (a fresh store profile can redraw the page).
+  const focused = document.activeElement?.name ? { name: document.activeElement.name, sel: [document.activeElement.selectionStart, document.activeElement.selectionEnd] } : null;
   const name = profile?.name || mine[0]?.r.s || '';
   document.title = name ? `${name} | ${t('sp.title')}` : t('sp.title');
   applyBrandColor(document.documentElement, profile?.color || '');
@@ -127,6 +129,13 @@ function render() {
       ${tipHtml()}
     </main>
     <footer class="pay-foot"><p><a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
+  if (focused) {
+    const el = app.querySelector(`[name="${focused.name}"]`);
+    if (el) {
+      el.focus({ preventScroll: true });
+      if (typeof focused.sel[0] === 'number') try { el.setSelectionRange(...focused.sel); } catch { /* not a text field */ }
+    }
+  }
   if (profile?.logo) logoShown = true;
 }
 
@@ -144,9 +153,14 @@ async function load() {
   phase = 'loading';
   render();
   const fresh = await fetchBrand(pub).catch(() => null);
+  // Redraw only when something changed: a redraw while a customer types a tip amount would take the cursor away.
+  const changed = !!fresh && JSON.stringify(fresh) !== JSON.stringify(profile);
   if (fresh) profile = fresh;
-  phase = profile ? 'ready' : 'missing';
-  render();
+  const next = profile ? 'ready' : 'missing';
+  if (changed || next !== phase) {
+    phase = next;
+    render();
+  }
 }
 
 app.addEventListener('click', async (e) => {

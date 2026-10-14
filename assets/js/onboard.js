@@ -7,6 +7,7 @@ import { addressStatus, checksum, sameAddress, formatUnits } from './evm.js';
 import { t, getLang } from './i18n.js';
 import { html, raw, attr, $, $$, store, uid, shortAddr, nextTerminal } from './util.js';
 import { readBackup, applyBackup } from './backup.js';
+import { installCard, keepData } from './install.js';
 import { fmtDateTime } from './i18n.js';
 import { icon, modal, hashPin, markUnlocked } from './ui.js';
 import { verifyOwner } from './owner.js';
@@ -315,6 +316,7 @@ export function renderOnboarding(main, { finish, manual }) {
       })}</ul>
       ${isTestnet() ? html`<div class="ob-tip"><p><b>${t('ob.done.nextTitle')}</b></p><p>${t('ob.done.nextTest')}</p>
         <a class="btn ghost small" href="${JPYC.faucet}" target="_blank" rel="noopener noreferrer">${icon('external')}<span>${t('ob.done.faucet')}</span></a></div>` : ''}
+      ${installCard()}
       <p class="ob-help"><a href="docs/reji-manual-ja.pdf" target="_blank" rel="noopener">${icon('receipt')}<span>${t('ob.done.manual')}</span></a><span>${t('ob.done.later')}</span></p>`,
   };
 
@@ -474,6 +476,7 @@ export function renderOnboarding(main, { finish, manual }) {
     c.innerHTML = String(rs.open ? restoreView() : VIEWS[st.id](st));
     chrome();
     if (!rs.open) after(st);
+    if (!rs.open && st.id === 'done') keepData();
     main.scrollTo?.({ top: 0 });
     const first = c.querySelector('input:not([type=radio]):not([type=checkbox])');
     if (first && matchMedia('(hover: hover) and (pointer: fine)').matches) first.focus({ preventScroll: true });

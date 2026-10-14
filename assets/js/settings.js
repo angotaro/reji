@@ -4,6 +4,7 @@ import { t, getLang, setLang, fmtDateTime, fmtDay } from './i18n.js';
 import { brandFields, brandPreview, readBrand, bindBrandFields } from './brandui.js';
 import { hasBrand, publishBrand, brandSent, brandKeyForBackup, restoreBrandKey, brandPub, brandProfile, storePageUrl, ensureBrandKey, tipCode, tipOffer } from './brand.js';
 import { storeCard } from './storecard.js';
+import { installCard } from './install.js';
 import { saveBackup, readBackup, applyBackup, BACKUP_AT } from './backup.js';
 import { validLink as validLinkOf } from './brand.js';
 import { APP, CHAINS, JPYC, MAINNET_IDS, chainName, explorerToken, resolveChain } from './config.js';
@@ -338,6 +339,7 @@ async function addRpc(btn) {
 
 const aboutSec = () => html`<section class="set-sec" id="sec-about">
   <h2>${t('set.sec.about')}</h2>
+  ${installCard()}
   <p>${t('about.what')}</p>
   <p>${t('about.how')}</p>
   <dl class="kv">

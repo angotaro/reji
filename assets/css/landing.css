@@ -37,9 +37,15 @@ body.lp { background: var(--paper); color: var(--ink); overflow-x: hidden; }
 .dev-phone { position: absolute; right: -9%; bottom: -12%; width: 29%; padding: 7px; border-radius: 26px; background: #151c33;
   box-shadow: 0 24px 40px -18px rgba(20, 28, 60, 0.6); animation: phone 10s infinite both; }
 .dev-phone .scr { position: relative; aspect-ratio: 390 / 800; overflow: hidden; border-radius: 20px; background: var(--paper); }
-.lp-stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; animation: 10s infinite both; }
-.s1 { animation-name: s1 !important; } .s2 { animation-name: s2 !important; } .s3 { animation-name: s3 !important; }
-.p1 { animation-name: p1 !important; } .p2 { animation-name: p2 !important; }
+.lp-stage img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; }
+/* The first screens are visible on their own, so the frames are never empty where the animation doesn't run (older Safari). */
+.lp-stage img.s1, .lp-stage img.p1 { opacity: 1; }
+.lp-stage img.s1 { animation: s1 10s infinite both; } .lp-stage img.s2 { animation: s2 10s infinite both; } .lp-stage img.s3 { animation: s3 10s infinite both; }
+.lp-stage img.p1 { animation: p1 10s infinite both; } .lp-stage img.p2 { animation: p2 10s infinite both; }
+@supports not (aspect-ratio: 1 / 1) { /* browsers without aspect-ratio: keep the screens' height */
+  .dev-tab .scr { height: 0; padding-top: 69.49%; }
+  .dev-phone .scr { height: 0; padding-top: 205.13%; }
+}
 @keyframes s1 { 0%, 24% { opacity: 1; } 28%, 97% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes s2 { 0%, 24% { opacity: 0; } 28%, 54% { opacity: 1; } 58%, 100% { opacity: 0; } }
 @keyframes s3 { 0%, 54% { opacity: 0; } 58%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
@@ -155,7 +161,7 @@ body.lp { background: var(--paper); color: var(--ink); overflow-x: hidden; }
 /* smooth page change into the app (browsers that support it) */
 @view-transition { navigation: auto; }
 @media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
-.lp-stage picture, .lp-steps picture { display: contents; } /* AVIF with a JPEG fallback; layout as if bare <img> */
+.lp-steps picture { display: contents; } /* AVIF with a JPEG fallback; layout as if bare <img> */
 
 /* the phone mockup peeks out of the tablet frame on purpose: never let it widen the page */
 .lp-hero { overflow-x: clip; }

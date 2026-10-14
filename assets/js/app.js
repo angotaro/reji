@@ -13,6 +13,9 @@ import { validLogo, applyBrandColor, hasBrand, publishBrand } from './brand.js';
 import { resumeCharge, trackConfirmations, chargeOpen, rerenderCharge } from './charge.js';
 import { gasWallet, refreshGasBalance, ownerState } from './gas.js';
 import { probe } from './rpc.js';
+import { initInstall, keepData } from './install.js';
+
+initInstall();
 
 const gasTick = () => { if (state.settings.gasless && gasWallet()) refreshGasBalance().catch(() => {}); };
 
@@ -167,6 +170,7 @@ state.sales
   .slice(0, 20)
   .forEach((s, i) => setTimeout(() => trackConfirmations(s), 800 + i * 500));
 
+if (state.settings.address) keepData(); // a set-up store: ask the browser to keep its data
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
