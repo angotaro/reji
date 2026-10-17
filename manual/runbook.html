@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Reji スタッフ運用マニュアル</title>
+<style>
+  @page { size: A4; margin: 16mm 16mm 18mm; }
+  :root { --ai: #22305a; --ai-deep: #18213f; --wash: #dde3ef; --mist: #eef1f6; --ink: #1b2440; --soft: #5a6480; --shu: #d0391f; --matcha: #3f7d4e; --ochre: #9a6a1f; --line: #cbd2de; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif; font-size: 10pt; line-height: 1.75; color: var(--ink); }
+  h1, h2, h3 { line-height: 1.35; margin: 0; }
+  p { margin: 0 0 0.55em; }
+  strong { color: var(--ai-deep); }
+  .chapter { break-before: page; }
+  .chapter > h1 { display: flex; align-items: baseline; gap: 0.6em; font-size: 19pt; color: var(--ai); padding-bottom: 5pt; border-bottom: 2.5pt solid var(--ai); margin-bottom: 10pt; }
+  .chapter > h1 .no { font-size: 12pt; color: #fff; background: var(--ai); border-radius: 4pt; padding: 1pt 7pt; }
+  h2 { font-size: 12.5pt; color: var(--ai); margin: 14pt 0 6pt; padding-left: 7pt; border-left: 4pt solid var(--ai); }
+  h3 { font-size: 10.5pt; margin: 10pt 0 4pt; }
+  .lead { font-size: 10.5pt; color: var(--soft); margin-bottom: 10pt; }
+  ul, ol { margin: 0 0 0.6em; padding-left: 1.4em; }
+  li { margin: 0.15em 0; }
+  figure { margin: 8pt 0 10pt; break-inside: avoid; }
+  figure img { display: block; width: 100%; border: 0.6pt solid var(--line); border-radius: 4pt; }
+  figcaption { font-size: 8.5pt; color: var(--soft); margin-top: 3pt; }
+  .shot { position: relative; }
+  .pin { position: absolute; width: 17pt; height: 17pt; margin: -8.5pt 0 0 -8.5pt; border-radius: 50%; background: var(--shu); color: #fff; font-size: 9pt; font-weight: 700; line-height: 17pt; text-align: center; box-shadow: 0 0 0 2pt #fff; }
+  .phones { display: flex; gap: 8pt; break-inside: avoid; margin: 8pt 0 10pt; }
+  .phones figure { flex: 1; margin: 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+  .box { border-radius: 5pt; padding: 8pt 11pt; margin: 8pt 0 10pt; break-inside: avoid; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .t { display: block; font-weight: 700; margin-bottom: 2pt; }
+  .must { background: #fdf0ed; border-left: 4pt solid var(--shu); }
+  .must .t { color: var(--shu); }
+  .tip { background: #edf5ef; border-left: 4pt solid var(--matcha); }
+  .tip .t { color: var(--matcha); }
+  .note { background: var(--mist); border-left: 4pt solid var(--ai); }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; font-size: 9.2pt; break-inside: auto; }
+  th, td { border: 0.6pt solid var(--line); padding: 4pt 6pt; vertical-align: top; text-align: left; }
+  th { background: var(--wash); color: var(--ai-deep); font-weight: 700; }
+  tr { break-inside: avoid; }
+  td.k { width: 30%; font-weight: 700; }
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 30pt; margin: 0 0 9pt; break-inside: avoid; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 21pt; height: 21pt; border-radius: 50%; background: var(--ai); color: #fff; font-weight: 700; text-align: center; line-height: 21pt; font-size: 10.5pt; }
+  .steps > li > b:first-child { display: block; font-size: 10.5pt; }
+  .checks { list-style: none; padding: 0; }
+  .checks li { padding-left: 17pt; position: relative; margin: 3pt 0; }
+  .checks li::before { content: ""; position: absolute; left: 0; top: 3.5pt; width: 9pt; height: 9pt; border: 1pt solid var(--ai); border-radius: 1.5pt; }
+  .key { display: inline-block; padding: 0 5pt; border: 0.8pt solid var(--line); border-bottom-width: 1.8pt; border-radius: 3pt; background: #fff; font-weight: 700; font-size: 9pt; line-height: 1.5; white-space: nowrap; }
+  .say { font-weight: 700; color: var(--ai-deep); }
+  .toc { list-style: none; padding: 0; columns: 1; }
+  .toc li { display: flex; gap: 8pt; padding: 5pt 0; border-bottom: 0.6pt dotted var(--line); font-size: 11pt; }
+  .toc .n { width: 22pt; color: var(--ai); font-weight: 700; }
+  .toc .d { color: var(--soft); font-size: 9pt; margin-left: auto; }
+  /* cover */
+  .cover { height: 263mm; display: flex; flex-direction: column; }
+  .noren { position: relative; background: var(--ai); color: #fff; padding: 22pt 22pt 30pt; border-radius: 6pt 6pt 0 0; }
+  .noren::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 12pt; background: repeating-linear-gradient(90deg, transparent 0 calc(20% - 4pt), #fff calc(20% - 4pt) 20%); }
+  .noren .app { font-size: 11pt; letter-spacing: 0.2em; opacity: 0.85; }
+  .noren h1 { font-size: 27pt; margin-top: 6pt; }
+  .noren .sub { font-size: 13pt; margin-top: 4pt; opacity: 0.92; }
+  .cover-body { flex: 1; position: relative; padding: 26pt 6pt 0; }
+  .cover-body p { font-size: 11pt; max-width: 125mm; }
+  .cover-stamp { position: absolute; right: 12mm; top: 20mm; width: 46mm; transform: rotate(-12deg); opacity: 0.92; }
+  .meta { margin-top: auto; border-top: 0.8pt solid var(--line); padding-top: 8pt; font-size: 9pt; color: var(--soft); display: grid; grid-template-columns: auto 1fr; gap: 2pt 12pt; }
+  .quick { border: 2pt solid var(--ai); border-radius: 6pt; padding: 12pt 14pt; }
+  .quick h2 { margin-top: 0; }
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6pt; margin: 8pt 0 12pt; }
+  .flow div { background: var(--mist); border-radius: 5pt; padding: 7pt 6pt; text-align: center; font-size: 9pt; }
+  .flow b { display: block; font-size: 16pt; color: var(--ai); line-height: 1.2; }
+  .diagram { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8pt; margin: 10pt 0; text-align: center; break-inside: avoid; }
+  .diagram .node { border: 1.2pt solid var(--ai); border-radius: 6pt; padding: 8pt; font-weight: 700; }
+  .diagram .node small { display: block; font-weight: 400; color: var(--soft); font-size: 8.5pt; }
+  .diagram .arrow { color: var(--ai); font-weight: 700; font-size: 9pt; }
+  .diagram .under { grid-column: 1 / -1; font-size: 9pt; color: var(--soft); border-top: 0.8pt dashed var(--line); padding-top: 5pt; }
+
+  /* added after the first version */
+  .shots { display: flex; gap: 6mm; align-items: flex-start; }
+  .shots figure { flex: 1 1 0; margin: 0; }
+  .shots figure.phone { flex: 0 0 34%; }
+  .shots.tight figure.phone img { max-height: 54mm; width: auto; max-width: 100%; margin: 0 auto; }
+  .w74 img { width: 74%; margin: 0 auto; }
+  .two.w74 img { max-height: 98mm; width: auto; max-width: 100%; }
+  .two.w70 img { width: 70%; margin: 0 auto; }
+  .two.w64 img { width: auto; max-height: 82mm; max-width: 100%; margin: 0 auto; }
+  .shots figure.phone img { max-height: 112mm; width: auto; max-width: 100%; margin: 0 auto; }
+  .two.tall img { max-height: 119mm; width: auto; max-width: 100%; margin: 0 auto; }
+  .half img { width: 50%; margin: 0 auto; }
+  .w90 img { width: 90%; margin: 0 auto; }
+  .w78 img { width: 78%; margin: 0 auto; }
+  .w70 img { width: 70%; margin: 0 auto; }
+  .phones figure img { max-height: 58mm; width: auto; max-width: 100%; margin: 0 auto; }
+  h2, h3 { break-after: avoid; }
+  .keep { break-inside: avoid; }
+  td.say small { display: block; margin-top: 3pt; font-weight: 400; color: var(--soft); }
+</style>
+</head>
+<body>
+
+<!-- ============ cover ============ -->
+<section class="cover">
+  <div class="noren">
+    <div class="app">REJI</div>
+    <h1>JPYC決済 スタッフ運用マニュアル</h1>
+    <div class="sub">お会計・お客様対応・困ったとき・閉店作業</div>
+  </div>
+  <div class="cover-body">
+    <svg class="cover-stamp" viewBox="0 0 120 120" aria-hidden="true">
+      <g fill="none" stroke="#d0391f"><circle cx="60" cy="60" r="54" stroke-width="4.2"/><line x1="11" y1="44" x2="109" y2="44" stroke-width="2.4"/><line x1="11" y1="77" x2="109" y2="77" stroke-width="2.4"/></g>
+      <g fill="#d0391f" text-anchor="middle" font-family="Noto Serif CJK JP, serif" font-weight="700">
+        <text x="60" y="37" font-size="19" letter-spacing="1.5">JPYC</text>
+        <text x="60" y="68.5" font-size="20">26.9.29</text>
+        <text x="60" y="101" font-size="17">入金済</text>
+      </g>
+    </svg>
+    <p>このマニュアルを読めば、JPYCでのお会計から、お客様への案内、困ったときの対応、閉店作業まで、ひとりでできるようになります。</p>
+    <p>Rejiは、紹介ページ（トップページ）の「Rejiを開く」から、登録なしで使い始められます。はじめての方は、第1章〜第4章と第7章を先に読んでください。最後のページの「クイックリファレンス」は、印刷してレジの横に置いておくと便利です。</p>
+    <div class="meta">
+      <span>対象</span><span>店舗スタッフ、店長・管理者（第10章〜第11章）</span>
+      <span>版</span><span>0.1.2（Reji v0.1.2 対応）　2026年10月</span>
+      <span>注意</span><span>画面の見た目は、お使いの端末や設定によって少し異なる場合があります。</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ contents ============ -->
+<section class="chapter">
+  <h1>目次</h1>
+  <ol class="toc">
+    <li><span class="n">1</span>Rejiとは<span class="d">しくみと、スタッフが覚えること</span></li>
+    <li><span class="n">2</span>開店前の準備<span class="d">チェックリスト</span></li>
+    <li><span class="n">3</span>画面の見かた<span class="d">レジ画面の各部</span></li>
+    <li><span class="n">4</span>基本のお会計<span class="d">商品を選んでから完了まで</span></li>
+    <li><span class="n">5</span>テンキーで金額を入力する<span class="d">メニューにない商品・税率</span></li>
+    <li><span class="n">6</span>お客様への案内<span class="d">接客のことば・お客様の画面</span></li>
+    <li><span class="n">7</span>困ったとき<span class="d">トラブル対応と返金</span></li>
+    <li><span class="n">8</span>売上画面<span class="d">集計・レシート再発行・CSV</span></li>
+    <li><span class="n">9</span>閉店作業<span class="d">チェックリスト、別の端末への引き継ぎ</span></li>
+    <li><span class="n">10</span>店長・管理者向け：設定と店主確認<span class="d">各設定項目、はじめての設定、お店の見た目とお店のページ、応援（投げ銭）、ウォレットでの署名</span></li>
+    <li><span class="n">11</span>手数料なし決済（ガスレス）<span class="d">お店のガス用ウォレットの作成と管理、ガス用ウォレットQ&amp;A</span></li>
+    <li><span class="n">12</span>セキュリティのルール<span class="d">必ず守ること</span></li>
+    <li><span class="n">13</span>用語集</li>
+    <li><span class="n">付</span>クイックリファレンス<span class="d">レジ横に掲示用</span></li>
+  </ol>
+</section>
+
+<!-- ============ 1 ============ -->
+<section class="chapter">
+  <h1><span class="no">1</span>Rejiとは</h1>
+  <p class="lead">Reji（レジ）は、JPYCでのお支払いを受け付けるためのレジアプリです。タブレットやスマホのブラウザで動きます。</p>
+  <h2>JPYCとは</h2>
+  <p>JPYCは、日本円と1対1で交換できるように設計された、円建ての電子決済手段です。<strong>1 JPYC ＝ 1円</strong>として扱います。お客様はスマホの「ウォレット」アプリ（HashPort Wallet、MetaMaskなど）にJPYCを入れて支払います。</p>
+  <h2>お金の流れ</h2>
+  <div class="diagram">
+    <div class="node">お客様のウォレット<small>スマホのアプリ</small></div>
+    <div class="arrow">JPYCを直接送金<br>→→→</div>
+    <div class="node">お店のウォレット<small>お店が管理</small></div>
+    <div class="under">レジ（Reji）は、ブロックチェーン上の記録を見て「入金があったか」を確認するだけです。お金を預かったり、中継したりはしません。</div>
+  </div>
+  <p>クレジットカードのような決済会社を通らないため、<strong>決済手数料はかかりません</strong>。代わりに、ブロックチェーンに記録するための少額の「ネットワーク手数料（ガス代）」が発生します。通常はお客様が負担しますが、お店が負担する「手数料なし決済」を使うこともできます（第11章）。</p>
+  <h2>スタッフが覚えることは3つ</h2>
+  <ol class="steps">
+    <li><b>商品を選んで「請求」を押す</b>レジ画面で商品をタップし、右下の「¥○○ を請求」を押します。</li>
+    <li><b>QRコードをお客様に見せる</b>お客様がスマホのカメラで読み取り、ウォレットで支払います。</li>
+    <li><b>赤い「入金済」の印が出たら完了</b>チャイムが鳴り、レシートに日付印が押されます。「次のお会計」を押して終わりです。</li>
+  </ol>
+  <div class="box must"><span class="t">絶対に守ること</span>
+    <p>秘密鍵・シードフレーズ（12〜24個の英単語）を、お客様に聞いたり、どこかに入力したりしてはいけません。Rejiはそれらを一切必要としません。入金の確認は、必ず<strong>レジ画面の「入金済」表示</strong>で行ってください（お客様のスマホ画面やスクリーンショットでは判断しません）。</p>
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section class="chapter">
+  <h1><span class="no">2</span>開店前の準備</h1>
+  <p class="lead">毎日、お店を開ける前に次の項目を確認します。</p>
+  <ul class="checks">
+    <li>タブレットが充電されていて、スタンドに置いてある（営業中は電源につないでおく）</li>
+    <li>Wi-Fiにつながっている。つながらないときのために、予備としてスマホのテザリングを用意している</li>
+    <li>ホーム画面の「Reji」アイコンからアプリを開いた（アイコンがない場合は、Rejiのトップページの「Rejiを開く」から開き、ホーム画面に追加しておく。追加のしかたは「設定」→「このアプリについて」に出ています）</li>
+    <li>画面右上の接続表示が<strong>緑の点＋チェーン名</strong>（例：Polygon）になっている</li>
+    <li>画面上部に<strong>黄色いしま模様の「テストモード」の帯が出ていない</strong>（本番の営業中は出ていてはいけません）</li>
+    <li>画面上部に<strong>赤い帯</strong>（「受取アドレスの設定が店主の署名と一致しません」）が出ていない。出ていたら営業を始めず、すぐ店長に連絡する</li>
+    <li>「売上」→「未入金」に、前日の遅れた入金がないか確認した（第7章）</li>
+    <li>レシートプリンターを使う場合、用紙がある</li>
+    <li>タブレットの自動ロック（画面オフ）が「なし」になっている</li>
+  </ul>
+  <figure class="w90"><img src="img/11-english-test-mode.jpg"><figcaption>テストモードの例：画面上部に黄色いしま模様の帯が出ます（この画像は英語表示）。この状態では本物のお金は動きません。本番営業では、帯が出ていないことを確認してください。</figcaption></figure>
+  <div class="box tip"><span class="t">ヒント</span><p>右上の「EN」「日本語」ボタンで、表示言語を切り替えられます。海外のお客様への説明にも使えます。</p></div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section class="chapter">
+  <h1><span class="no">3</span>画面の見かた</h1>
+  <p class="lead">レジ画面は、左側の「商品」と、右側の「レシート（カート）」でできています。</p>
+  <figure class="shot">
+    <img src="img/02-register.jpg">
+    <span class="pin" style="left:83%;top:3%">1</span>
+    <span class="pin" style="left:4%;top:7.5%">2</span>
+    <span class="pin" style="left:65%;top:7.5%">3</span>
+    <span class="pin" style="left:4%;top:12.5%">4</span>
+    <span class="pin" style="left:97%;top:9%">5</span>
+    <span class="pin" style="left:87.5%;top:92%">6</span>
+    <figcaption>レジ画面（タブレット）</figcaption>
+  </figure>
+  <table>
+    <tr><th style="width:9%">番号</th><th style="width:25%">名前</th><th>説明</th></tr>
+    <tr><td>1</td><td>ヘッダー</td><td>左に店名。右に「レジ」「売上」「設定」の切り替えと、接続表示（緑の点＝正常）、言語切り替え。</td></tr>
+    <tr><td>2</td><td>メニュー／テンキー</td><td>商品ボタンで選ぶ「メニュー」と、金額を直接入力する「テンキー」を切り替えます（第5章）。</td></tr>
+    <tr><td>3</td><td>カテゴリ</td><td>ドリンク・フードなどで商品ボタンを絞り込みます。「すべて」で全部表示。</td></tr>
+    <tr><td>4</td><td>商品ボタン</td><td>タップするとレシートに追加。右上の数字はカートに入っている数です。「8%」は軽減税率の商品です。</td></tr>
+    <tr><td>5</td><td>レシート（カート）</td><td>選んだ商品・数量・合計。＋／−で数量を変更し、0にすると消えます。「※」は軽減税率の商品、「内消費税」は税込価格に含まれる消費税額です。</td></tr>
+    <tr><td>6</td><td>請求ボタン</td><td>「¥○○ を請求」でお支払い画面を開きます。「クリア」はレシートを空にします。</td></tr>
+  </table>
+  <div class="keep">
+  <h2>スマホで使う場合</h2>
+  <div class="two tall">
+    <figure><img src="img/12-phone-register.jpg"><figcaption>スマホでは画面下に合計と「請求する」が表示されます。</figcaption></figure>
+    <figure><img src="img/13-phone-sheet.jpg"><figcaption>合計の部分をタップすると、レシート（カート）が下から開きます。</figcaption></figure>
+  </div>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section class="chapter">
+  <h1><span class="no">4</span>基本のお会計</h1>
+  <p class="lead">いちばんよく使う流れです。1回のお会計は、お客様の操作を含めて30秒〜1分ほどです。</p>
+  <ol class="steps">
+    <li><b>商品をタップする</b>同じ商品をもう一度タップすると数量が増えます。数量はレシートの＋／−でも変えられます。</li>
+    <li><b>合計を確認して「¥○○ を請求」を押す</b>お支払い画面に切り替わります。</li>
+    <li><b>QRコードをお客様に見せる</b>タブレットをお客様の方へ向けるか、「お客様に表示」を押して、金額とQRコードだけを大きく表示します。</li>
+    <li><b>お客様が支払う</b>お客様がスマホのカメラでQRを読み取り、ウォレットで支払います（第6章）。画面には「○○で入金を待っています」と緑の点が表示されています。</li>
+    <li><b>「入金済」の印を確認する</b>入金を確認するとチャイムが鳴り、赤い日付印が押された画面に変わります。</li>
+    <li><b>レシートを渡す</b>お客様に右側の「電子レシート」QRを読み取ってもらいます。紙が必要なら「レシートを印刷」。</li>
+    <li><b>「次のお会計」を押す</b>レジ画面に戻り、レシートは空になります。</li>
+  </ol>
+  <figure class="w78"><img src="img/03-charge.jpg"><figcaption>お支払い画面：上に金額、左にQRコード、右に入金の待ち状態と有効期限。</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">4</span>基本のお会計（つづき）</h1>
+  <figure><img src="img/05-present.jpg"><figcaption>「お客様に表示」：金額とQRコードだけを大きく表示します。右上の「戻る」で元に戻ります。</figcaption></figure>
+  <figure><img src="img/04-paid.jpg"><figcaption>入金済：赤い日付印が押されます。「状態」が「確認中」から「確定」に変わります。右側はお客様用の電子レシートQRです。</figcaption></figure>
+  <div class="box note"><span class="t">「確認中」と「確定」</span><p>日付印が出た時点で、支払いはブロックチェーンに記録されています。通常はその場で商品をお渡しして大丈夫です。「確定」は数秒〜1分ほどで表示されます。高額のお会計では、「確定」になるまで待つと安心です。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">4</span>基本のお会計（便利な機能）</h1>
+  <table>
+    <tr><th style="width:27%">機能</th><th>使い方</th></tr>
+    <tr><td class="k">QRコード</td><td>ひとつのQRコードで、どのウォレットのお客様にも対応します。スマホのカメラやLINEで読み取るとお支払いページが開き、そこからHashPort Walletの手順や、各ウォレットアプリで開くボタンを選べます。</td></tr>
+    <tr><td class="k">チェーンの切り替え</td><td>QRコードの上に「Polygon」「Avalanche」などのタブがある場合、お客様のJPYCが入っているチェーンに合わせて切り替えます。どのタブを表示していても、受け付けているすべてのチェーンで入金を確認しています。</td></tr>
+    <tr><td class="k">リンクをコピー／共有</td><td>お支払いページのリンクを、LINEやメールで送れます。電話注文など、お客様がその場にいないときに使います。</td></tr>
+    <tr><td class="k">10分延長</td><td>有効期限（標準15分）を延ばします。延長するとQRコードが新しくなるので、お客様にもう一度読み取ってもらってください。</td></tr>
+    <tr><td class="k">請求を取り消す</td><td>間違えたときに使います。レシート（カート）の内容は残るので、直してもう一度請求できます。取り消した請求は「売上」→「未入金」に残ります。</td></tr>
+    <tr><td class="k">取引IDで確認する</td><td>お客様が「払ったのに画面が変わらない」とき、お客様のウォレットに表示される取引ID（0xから始まる長い文字列）を貼り付けて確認します（第7章）。</td></tr>
+  </table>
+  <div class="box tip"><span class="t">ヒント：画面を閉じてしまっても大丈夫</span><p>お支払い画面の途中でアプリを閉じたり再読み込みしたりしても、支払い待ちの請求は自動で元に戻ります。</p></div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section class="chapter">
+  <h1><span class="no">5</span>テンキーで金額を入力する</h1>
+  <p class="lead">メニューにない商品や、金額だけを請求したいときに使います。</p>
+  <figure class="w70"><img src="img/08-keypad.jpg"><figcaption>テンキー：上の黒い画面に金額が表示されます。</figcaption></figure>
+  <ol class="steps">
+    <li><b>「テンキー」に切り替える</b>画面左上の「メニュー／テンキー」で切り替えます。</li>
+    <li><b>金額を入力する</b>数字キーで入力し、間違えたら「⌫」で1桁消します。品名は任意です（空欄なら「商品」）。</li>
+    <li><b>税率を選ぶ</b>「10%」「8%（軽減）」「非課税」から選びます。</li>
+    <li><b>「レシートに追加」を押す</b>レシートに1行追加されます。続けて入力するか、「請求」へ進みます。</li>
+  </ol>
+  <div class="box note"><span class="t">税率の選び方（一般的な例）</span><p>店内で飲食する場合は10%、持ち帰りの飲食料品（お酒を除く）は8%（軽減税率）になるのが一般的です。判断に迷う場合は、お店のルールに従うか、店長に確認してください。</p></div>
+  <div class="box tip"><span class="t">ヒント</span><p>キーボードやテンキー付きのタブレットでは、数字キーで入力し、<span class="key">Enter</span> で追加、<span class="key">Esc</span> でクリアできます。</p></div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section class="chapter">
+  <h1><span class="no">6</span>お客様への案内</h1>
+  <h2>接客のことば（例）</h2>
+  <table>
+    <tr><th style="width:30%">場面</th><th>ことばの例</th></tr>
+    <tr><td class="k">QRを見せるとき</td><td class="say">「スマホのカメラで、こちらのQRコードを読み取ってください。」</td></tr>
+    <tr><td class="k">手数料なし決済が有効なとき</td><td class="say">「ネットワーク手数料はお店が負担しますので、JPYCだけでお支払いいただけます。」</td></tr>
+    <tr><td class="k">手数料なし決済が無効なとき</td><td class="say">「JPYCのほかに、手数料として少額のPOLが必要です。」</td></tr>
+    <tr><td class="k">ウォレットが開かないとき</td><td class="say">「お支払いページの『ウォレットアプリで開く』から、お使いのアプリを選んでください。」<small>HashPort Walletの方は、お支払いページの一番上「コピーして送る（HashPort Walletなど）」の手順で払えます（アドレスをコピー →「送る」で貼り付け → 金額を入れて送る。入金は自動で確かめられます）。LINEのQRリーダーで読み取ったときは、自動でSafari／Chromeで開きます。ほかのアプリの中で開いたときは、メニューの「ブラウザで開く」を選んでもらいます。アプリが開かないときや一覧にないウォレット（Rabbyなど）は、ページの「ほかのウォレット・アプリが開かないとき」へ：① リンクをコピーしてウォレットアプリのブラウザに貼り付け ② ウォレットアプリのQRリーダーでレジのQRを読み取る（アプリによります）③ 手動で送金。</small></td></tr>
+    <tr><td class="k">支払いが終わったとき</td><td class="say">「ありがとうございます。こちらのQRで電子レシートを保存できます。」</td></tr>
+  </table>
+  <h2>お客様のスマホに表示される画面</h2>
+  <div class="phones">
+    <figure><img src="img/14-pay-ready.jpg"><figcaption>読み取り直後：ご請求額とウォレットの選択。緑の枠は手数料なしの案内です。</figcaption></figure>
+    <figure><img src="img/15-pay-connected.jpg"><figcaption>ウォレット接続後：残高を確認し「支払う（手数料なし）」。</figcaption></figure>
+    <figure><img src="img/16-pay-done.jpg"><figcaption>完了：お客様の画面にも日付印が出ます。</figcaption></figure>
+  </div>
+  <div class="box must"><span class="t">お客様の画面では判断しない</span><p>お客様のスマホの完了画面は参考です。商品をお渡しする判断は、必ず<strong>レジ画面の「入金済」</strong>で行ってください。スクリーンショットなどで偽の画面を見せられる可能性があるためです。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">6</span>お客様への案内（つづき）</h1>
+  <div class="two w74">
+    <figure><img src="img/19-pay-nowallet.jpg"><figcaption>ブラウザにウォレットがない場合：一番上に「コピーして送る（HashPort Walletなど）」の手順、その下にウォレットアプリの中で開き直すボタンが出ます。</figcaption></figure>
+    <figure><img src="img/18-receipt-itemized.jpg"><figcaption>電子レシート：明細・税率ごとの金額・取引IDが入ります。ブロックチェーン上で支払いを確認すると緑のチェックと日付印が表示されます。</figcaption></figure>
+  </div>
+  <h2>よくある質問</h2>
+  <table>
+    <tr><th style="width:30%">お客様の質問</th><th>答え方</th></tr>
+    <tr><td class="k">JPYCはどこで手に入る？</td><td>JPYCの公式サービスで入手できます（詳しくはJPYC公式サイト）。お店では販売していません。</td></tr>
+    <tr><td class="k">手数料はかかる？</td><td>手数料なし決済が有効なら、お客様の手数料はかかりません。無効の場合は、少額のネットワーク手数料（POL）がかかります。お店の決済手数料はありません。</td></tr>
+    <tr><td class="k">レシートは？</td><td>画面の電子レシートQRから保存できます。紙が必要なら印刷します。登録番号を設定しているお店では、適格簡易請求書としての記載があります。</td></tr>
+    <tr><td class="k">領収書（宛名入り）がほしい</td><td>電子レシートの「宛名・但し書きを入れる」から、お客様ご自身で入れられます。印刷やPDF保存もできます（第10章）。</td></tr>
+    <tr><td class="k">お店を応援したい（投げ銭）</td><td>お店が受け付けていれば、お店のページの「このお店を応援する」から送れます。売上ではないため、レシートは出ません（第10章）。</td></tr>
+    <tr><td class="k">間違えて払った／返金してほしい</td><td>その場で返金はできません。レシート番号と内容を控え、店長が対応します（第7章「返金」）。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 7 ============ -->
+<section class="chapter">
+  <h1><span class="no">7</span>困ったとき</h1>
+  <p class="lead">まず落ち着いて、次の表で症状を探してください。解決しないときは、無理をせず店長に連絡します。</p>
+  <table>
+    <tr><th style="width:33%">こんなとき</th><th>こうする</th></tr>
+    <tr><td class="k">お客様は「払った」と言うのに、レジが「入金を待っています」のまま</td><td>① 30秒〜1分待つ。② 右上の接続表示が緑か確認する。③ お客様のウォレットから取引IDを教えてもらい、「取引IDで確認する」に貼り付けて「確認」。④ それでも見つからなければ、商品は渡さずに店長へ。</td></tr>
+    <tr><td class="k">「請求額と異なる入金」が表示された</td><td>表示された金額を確認します。金額が正しければ「この入金を使う」で完了にできます。少ない場合は不足分の扱いを店長に確認してから使います。</td></tr>
+    <tr><td class="k">「期限切れ」になった</td><td>「10分延長」を押し、お客様に新しいQRをもう一度読み取ってもらいます。期限後も3分間は、遅れた入金を確認し続けます。</td></tr>
+    <tr><td class="k">間違えて請求した</td><td>「請求を取り消す」。レシート（カート）は残るので、直して請求し直します。</td></tr>
+    <tr><td class="k">取り消した後・期限切れの後に、お客様が支払っていた</td><td>「売上」→「未入金」の該当する請求で「再確認」。入金が見つかると売上に移ります。</td></tr>
+    <tr><td class="k">右上が赤い／「接続できません」</td><td>Wi-Fiを確認し、少し待ちます（自動で別の接続先に切り替わります）。続く場合は店長へ（設定の「接続先（RPC）」で状態を確認。第10章）。</td></tr>
+    <tr><td class="k">「入金を見つけました。別のノードでも確かめています…」のまま</td><td>通常は数秒で「入金済」になります。そのまま待ちます。別のノードで確認できなかった入金は「請求額と異なる入金」の欄に「別のノードで確認できませんでした」と表示されるので、自分では「この入金を使う」を押さず、店長に確認します。</td></tr>
+    <tr><td class="k">画面上部に赤い帯「受取アドレスの設定が店主の署名と一致しません」</td><td>設定が書き換えられた可能性があります。<strong>お会計を止めて、すぐに店長に連絡</strong>してください。店長は受取アドレスを確認し、店主確認をやり直します。</td></tr>
+    <tr><td class="k">画面上部に黄色い帯「受取アドレスの店主確認がまだです」</td><td>店長に伝えます。店長が「設定」→「お店とウォレット」の「ウォレットで店主確認」を行うと消えます。</td></tr>
+    <tr><td class="k">お客様の残高が足りない</td><td>お客様の画面に表示されます。別の支払い方法を案内してください。</td></tr>
+    <tr><td class="k">お客様のJPYCが別のチェーンにある</td><td>お客様の画面に「○○には残高があります」と表示されます。レジのチェーンタブをそのチェーンに切り替えます（受け付けているチェーンのみ）。</td></tr>
+    <tr><td class="k">お客様の画面に「手数料なしの支払いは完了しませんでした」</td><td>お客様はそのまま通常の支払い（手数料あり）で続けられます。続けて起きる場合は店長へ（ガス用ウォレットの残高不足や、通信の問題の可能性）。</td></tr>
+    <tr><td class="k">お客様の画面に「お店に届いたか確認しています」と残り時間</td><td>手数料なしの支払いで、レジからの返事が届かなかったときの表示です。レジの請求画面を閉じずに、残り時間（最大2〜3分）が終わるまで待ってもらいます。その間に入金が見つかれば完了します。見つからなければ、お客様の画面に通常の支払いが案内されます（二重払いにはなりません）。</td></tr>
+    <tr><td class="k">レシートが印刷できない</td><td>プリンターの電源・用紙を確認します。すぐに直らない場合は電子レシートQRで代わりにお渡しします。</td></tr>
+    <tr><td class="k">アプリを閉じてしまった</td><td>もう一度開けば、支払い待ちの請求は自動で元に戻ります。</td></tr>
+  </table>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">7</span>困ったとき（つづき）：返金</h1>
+  <h2>返金について</h2>
+  <div class="box must"><span class="t">Rejiには返金ボタンはありません</span>
+    <p>JPYCの返金は、店長（または権限のある人）がお店のウォレットから、お客様のウォレットへ送金して行います。スタッフは次の4つをメモして店長に渡してください。</p>
+    <ol>
+      <li>レシート番号（No. 20260928-0012 など）</li>
+      <li>支払元のアドレス（レシートの「支払元」）</li>
+      <li>返金する金額</li>
+      <li>理由と日時</li>
+    </ol>
+    <p>売上の記録は削除しないでください。返金は別に記録します（会計処理は店長・会計担当の指示に従います）。</p>
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section class="chapter">
+  <h1><span class="no">8</span>売上画面</h1>
+  <p class="lead">画面上の「売上」を押すと開きます。左に集計、右に一覧が表示されます。</p>
+  <div class="two">
+    <figure><img src="img/06-sales.jpg"><figcaption>売上画面：左が集計（日計）、右上が未入金、その下が売上の一覧。</figcaption></figure>
+    <figure><img src="img/07-sale-modal.jpg"><figcaption>一覧の行をタップするとレシートが開きます：再印刷、リンクのコピー、エクスプローラーでの確認、削除（PINが必要）。</figcaption></figure>
+  </div>
+  <table>
+    <tr><th style="width:24%">項目</th><th>説明</th></tr>
+    <tr><td class="k">期間</td><td>今日・昨日・7日間・今月・すべてを切り替えます。検索欄では、レシート番号・商品名・取引IDで探せます。</td></tr>
+    <tr><td class="k">集計</td><td>売上合計、件数と客単価、税率ごとの対象額と消費税、チェーンごとの合計、「商品別の売上」。</td></tr>
+    <tr><td class="k">一覧のマーク</td><td>緑の✓＝確定、黄色の点＝確認中（しばらくすると✓になります）。</td></tr>
+    <tr><td class="k">未入金</td><td>期限切れや取り消しになった過去7日間の請求。「再確認」で遅れた入金を探せます。不要なものは「×」で一覧から外せます。</td></tr>
+    <tr><td class="k">集計を印刷</td><td>その期間の集計表（日計表）を印刷します。</td></tr>
+    <tr><td class="k">売上CSV／明細CSV</td><td>Excelや会計ソフト用のファイルを保存します。売上CSVは1件1行、明細CSVは商品1行ずつです。</td></tr>
+  </table>
+  <div class="box note"><span class="t">テストモードの売上</span><p>テストモードで行った売上は、本番では集計に含まれず、一覧にも表示されません（逆も同じ）。</p></div>
+</section>
+
+<!-- ============ 9 ============ -->
+<section class="chapter">
+  <h1><span class="no">9</span>閉店作業</h1>
+  <ul class="checks">
+    <li>「売上」→「今日」で、売上合計と件数を確認した</li>
+    <li>「集計を印刷」で日計表を印刷した（または画面を記録した）</li>
+    <li>一覧に黄色の点（確認中）が残っていない。残っている場合は数分待って再度確認</li>
+    <li>「未入金」を確認し、必要なら「再確認」を行った</li>
+    <li>タブレットを充電器につないだ</li>
+  </ul>
+  <h2>店長の定期作業</h2>
+  <table>
+    <tr><th style="width:24%">頻度</th><th>作業</th></tr>
+    <tr><td class="k">毎週</td><td>「設定」→「データ」→「バックアップを保存」。データはこのタブレットの中だけにあるため、壊れたり初期化したりすると消えてしまいます。バックアップファイルは安全な場所に保管します。</td></tr>
+    <tr><td class="k">毎月</td><td>「売上」→「今月」→「売上CSV」「明細CSV」を保存し、会計担当に渡します。</td></tr>
+    <tr><td class="k">毎月</td><td>手数料なし決済を使っている場合、ガス用ウォレットの残高を確認します（第11章）。</td></tr>
+    <tr><td class="k">端末の交換・初期化の前</td><td>バックアップを保存し、ガス用ウォレットの「残高を店主のウォレットへ戻す」を行います。ガス用ウォレットはバックアップに含まれません。</td></tr>
+    <tr><td class="k">随時</td><td>受け取ったJPYCの円への交換（償還）は、JPYC公式の手続きに従って行います。</td></tr>
+  </table>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">9</span>店長向け：別の端末でお店を使う（引き継ぎ）</h1>
+  <p class="lead">タブレットを買い替えるとき、2台目のレジを使うとき、故障や紛失に備えるときは、バックアップファイルでお店を引き継ぎます。お店のデータは端末の中にだけあるので、いまの端末で保存したファイルが頼りです。</p>
+  <div class="two">
+    <figure><img src="img/help-welcome.jpg"><figcaption>新しい端末のはじめての画面。「別の端末のお店を引き継ぐ」を選びます。</figcaption></figure>
+    <figure><img src="img/help-restore.jpg"><figcaption>ファイルを選ぶと、中身を確かめてから引き継げます。</figcaption></figure>
+  </div>
+  <h2>手順</h2>
+  <ol>
+    <li><b>いまの端末で：</b>「設定」→「データ」→「バックアップを保存」。<code>reji-backup-日付.json</code> ができます。</li>
+    <li><b>ファイルを送る：</b>AirDrop、自分あてのメール、LINEの「Keepメモ」など。ほかの人やグループのトークには送りません。</li>
+    <li><b>新しい端末で：</b>Rejiを開き、「別の端末のお店を引き継ぐ」→「バックアップファイルを選ぶ」。中身を確かめ、使い方を選んで「この内容で引き継ぐ」。iPhone・iPadで、Safariで作ったお店をホーム画面のRejiに移すときも同じです。</li>
+  </ol>
+  <table>
+    <tr><th style="width:30%">使い方</th><th>引き継がれるもの</th></tr>
+    <tr><td class="k">この端末に切り替える</td><td>設定・商品・売上・未入金・レシート番号。前の端末の代わりに使うときに選びます。</td></tr>
+    <tr><td class="k">2台目のレジとして使う</td><td>設定と商品だけ。売上は前の端末に残り、この端末のレシート番号には「B」などの記号がつきます。</td></tr>
+  </table>
+  <div class="box note"><span class="t">ガス用ウォレットは引き継がれません</span><p>手数料なし決済のガス用ウォレットは、安全のためバックアップに入りません。新しい端末では「設定」→「手数料なし決済」で作り直し、少額のPOLを入れます。画像つきの手順は、Rejiのサイトの「バックアップと引き継ぎ」のページ（backup.html）にもあります。</p></div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section class="chapter">
+  <h1><span class="no">10</span>店長・管理者向け：設定</h1>
+  <p class="lead">「設定」はPINで保護できます。スタッフは原則として設定を変更しません。</p>
+  <figure class="half"><img src="img/09-settings.jpg"><figcaption>設定画面：左の項目から移動できます。変更すると画面下に「変更を保存」が表示されます。</figcaption></figure>
+  <table>
+    <tr><th style="width:27%">項目</th><th>内容と注意</th></tr>
+    <tr><td class="k">お店とウォレット</td><td>店名、受取ウォレットのアドレス、店主確認、モード（本番／テスト）、受け付けるチェーンと「標準」。受取アドレスを変えると、以後の入金先が変わります。店主確認をしている場合、変更には店主のウォレットでの署名が必要です。変更後は新しいアドレスで店主確認をし直し、1円などの少額で入金テストをしてください。</td></tr>
+    <tr><td class="k">お店の見た目・このお店の情報</td><td>ロゴ、色、紹介、リンク、イベント出店。お店のページの共有、店頭POP、応援（投げ銭）、識別情報も（この章の後半）。</td></tr>
+    <tr><td class="k">レシートと税</td><td>税込／税抜、適格請求書発行事業者の登録番号（T＋13桁）、住所・電話、レシートのひとこと、端末記号（複数のレジで同じウォレットを使う場合）、用紙の幅（58mm／80mm）。</td></tr>
+    <tr><td class="k">レジの動作</td><td>請求の有効期限（分）、入金時のチャイム、言語。</td></tr>
+    <tr><td class="k">手数料なし決済</td><td>ガス用ウォレットの作成、入金用QR、残高、お客様への案内のオン／オフ、残高を戻す、秘密鍵の表示（第11章）。</td></tr>
+    <tr><td class="k">商品メニュー</td><td>商品名・価格・税率・カテゴリ。上下の矢印で並べ替え、ゴミ箱で削除。「変更を保存」を押すまで反映されません。</td></tr>
+    <tr><td class="k">PINロック</td><td>4〜8桁のPINを設定すると、設定・データ操作・売上の削除にPINが必要になります。一度解除すると10分間は再入力不要です。「今すぐロック」ですぐに戻せます。</td></tr>
+    <tr><td class="k">データ</td><td>バックアップの保存・復元、すべて消去。「すべて消去」は元に戻せず、ガス用ウォレットも消えます。先に残高を戻してください。</td></tr>
+    <tr><td class="k">接続先（RPC）</td><td>通常は設定不要です（自動で選びます）。状態の確認と、自分専用の接続先の追加ができます（第10章「接続先（RPC）」）。</td></tr>
+  </table>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>店長・管理者向け：はじめての設定（かんたん設定）</h1>
+  <p class="lead">Rejiは、お店ごと・端末ごとに設定します。運営者への登録や契約はありません。はじめて開くと「かんたん設定」が始まり、画面の案内にそって9つの手順を順番に進めます（約5分）。「必須」は飛ばせません。「推奨」「任意」は、あとから「設定」でも行えます。</p>
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:22%">手順</th><th style="width:9%">区分</th><th>内容</th></tr>
+    <tr><td>1</td><td class="k">お店の名前</td><td>必須</td><td>レシートと、お客様のお支払い画面に表示されます。</td></tr>
+    <tr><td>2</td><td class="k">受け取るウォレット</td><td>必須</td><td>お店のウォレットの公開アドレス（0x…）を貼り付けます。4文字ずつ区切って表示されるので、最初と最後の文字がウォレットアプリの表示と同じか確かめます。秘密鍵やシードフレーズは入力しません。</td></tr>
+    <tr><td>3</td><td class="k">店主確認</td><td>推奨</td><td>受取アドレスのウォレットで署名し、持ち主であることを確かめます。送金も手数料も発生しません。署名のしかたは次のページ。</td></tr>
+    <tr><td>4</td><td class="k">受け取り方</td><td>必須</td><td>「テストモードで試す（おすすめ）」か「本番で始める」を選び、受け付けるチェーン（おすすめはPolygon）を選びます。</td></tr>
+    <tr><td>5</td><td class="k">商品メニュー</td><td>任意</td><td>サンプルメニュー／自分で数品入力／メニューを使わない（テンキーで入力）から選びます。</td></tr>
+    <tr><td>6</td><td class="k">レシートと税</td><td>任意</td><td>税込・税抜、登録番号（T＋13桁）、住所・電話。空欄のままでも使えます。</td></tr>
+    <tr><td>7</td><td class="k">お店の見た目</td><td>任意</td><td>ロゴ画像、お店の色、お店のリンク（Instagramなど）。レジ、お客様の画面、レシートに表示されます（この章の後半）。</td></tr>
+    <tr><td>8</td><td class="k">PINロック</td><td>推奨</td><td>「設定」や売上データを開くときの4〜8桁の番号。</td></tr>
+    <tr><td>9</td><td class="k">手数料なし決済</td><td>任意</td><td>ガス用ウォレットを作り、少額のPOLを入れます（第11章）。店主確認が必要です。</td></tr>
+  </table>
+  <figure class="half"><img src="img/01-setup.jpg"><figcaption>かんたん設定の最初の画面。手順と区分（必須・推奨・任意）が一覧で表示されます。</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>はじめての設定（つづき）と店主確認</h1>
+  <div class="two">
+    <figure><img src="img/01b-setup-wallet.jpg"><figcaption>受取アドレスの確認。最初と最後の4文字を見比べます。</figcaption></figure>
+    <figure><img src="img/01e-setup-done.jpg"><figcaption>最後に一覧で確認。「まだです（おすすめ）」の項目は、あとで設定します。</figcaption></figure>
+  </div>
+  <div class="box tip"><span class="t">ホーム画面に追加して、アプリのように使う</span><p>最後の画面に、お使いの端末でホーム画面に追加する方法が出ます。iPhone・iPadでは、ホーム画面のRejiとSafariのデータが別々なので、<strong>先にホーム画面に追加してから、ホーム画面のRejiで設定</strong>すると引き継ぎが要りません。</p></div>
+  <h2>途中でやめたとき・あとで見直すとき</h2>
+  <p>途中で画面を閉じても、次に開くと続きから再開します。「設定」→「お店とウォレット」の「かんたん設定を開く」で、いつでももう一度確認できます。画面右上の「あとで手動で設定する」を選ぶと確認の画面が出ます。設定もれを防ぐため、できるだけ最後まで進めてください。</p>
+  <h2>店主確認の署名のしかた</h2>
+  <p><strong>この端末のウォレットで署名：</strong>タブレットやパソコンにウォレット（MetaMaskの拡張機能、MetaMaskアプリ内のブラウザなど）がある場合。</p>
+  <p><strong>スマホで署名：</strong>タブレットにウォレットがない場合。店主のスマホのカメラでQRコードを読み取り、開いたページで「○○で署名」を押します。署名はインターネット上の公開の通信網（Nostr）でレジに届き、レジの画面が自動で閉じます。</p>
+  <div class="box note"><span class="t">テストモードと本番</span><p>テストモードでは本物のお金は動きません。営業前に必ず「本番」になっていることを確認してください（「設定」→「お店とウォレット」で切り替え）。テスト用と本番用の売上は別々に表示されます。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>店長・管理者向け：店主確認（つづき）</h1>
+  <div class="shots">
+    <figure><img src="img/21-owner-modal.jpg"><figcaption>レジに表示される署名の画面。</figcaption></figure>
+    <figure class="phone"><img src="img/20-sign-page.jpg"><figcaption>QRを読み取った店主のスマホ。</figcaption></figure>
+  </div>
+  <h2>店主の署名が必要な操作</h2>
+  <table>
+    <tr><th style="width:33%">操作</th><th>理由</th></tr>
+    <tr><td class="k">受取アドレスの変更</td><td>スタッフや第三者が、売上の送り先を勝手に変えられないようにするため。変更後は、新しいアドレスで店主確認をし直します。</td></tr>
+    <tr><td class="k">ガス用ウォレットの残高を戻す</td><td>残高は店主のウォレット（受取アドレス）へ送られます。</td></tr>
+    <tr><td class="k">ガス用ウォレットの秘密鍵を表示</td><td>秘密鍵を知っている人は、ガス用ウォレットのPOLを使えるため。</td></tr>
+    <tr><td class="k">手数料なし決済を使う</td><td>店主確認が済んでいないと、ガス用ウォレットを作れません。</td></tr>
+  </table>
+  <h2>署名で起きること・起きないこと</h2>
+  <p>署名は「このウォレットの持ち主です」という証明だけです。お金は動かず、手数料もかかりません。署名の内容（店名・操作・ウォレット・日時）は画面で確認できます。見覚えのない署名の依頼には応じないでください。</p>
+  <h2>複数の店舗・複数のレジ</h2>
+  <p>店舗ごと・端末ごとに、それぞれ設定と店主確認を行います。同じウォレットを複数のレジで使う場合は、「レシートと税」の端末記号を端末ごとに変えてください。</p>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>店長・管理者向け：お店の見た目（ロゴ・色・リンク）</h1>
+  <p class="lead">「設定」→「お店の見た目」（かんたん設定の7番目でも設定できます）で、ロゴ画像、お店の色、お店のリンクを設定できます。どれも任意です。設定すると、お店のスタッフにもお客様にも、どのお店のレシートかがひと目でわかります。</p>
+  <table>
+    <tr><th style="width:24%">項目</th><th>表示される場所</th></tr>
+    <tr><td class="k">ロゴ画像</td><td>レジの上部、お会計の画面（お客様に見せる画面）、入金済の画面、お客様のお支払い画面、電子レシート、印刷したレシート</td></tr>
+    <tr><td class="k">お店の色</td><td>レジとお客様のお支払い画面の上の帯、お会計の画面の上部、レシートの店名と線。明るすぎる色は、文字が読めるよう自動で少し濃くします。</td></tr>
+    <tr><td class="k">お店のリンク</td><td>電子レシートとお支払い完了画面のボタン（例：「Instagram を見る」）。https:// から始まるアドレスだけ使えます。印刷したレシートにはアドレスが印字されます。</td></tr>
+    <tr><td class="k">お礼のメッセージ</td><td>「レシート」→「レシートのひとこと」に入れると、お客様のお支払い完了画面とレシートに出ます。</td></tr>
+  </table>
+  <div class="two">
+    <figure><img src="img/09b-settings-brand.jpg"><figcaption>「お店の見た目」。右側で、お客様にどう見えるかを確かめながら設定できます。</figcaption></figure>
+    <figure><img src="img/03-charge.jpg"><figcaption>お会計の画面。上部にロゴと店名が出ます。</figcaption></figure>
+  </div>
+  <h2>ロゴ画像のこつ</h2>
+  <p>正方形に近く、余白の少ない画像がきれいに見えます（PNG・JPEG・AVIF・SVGなど、ふつうの画像ならどれでも選べます）。</p>
+  <p>選んだ画像は自動で小さくし（256ピクセル以下）、軽くて表示が速いAVIF形式にして、この端末に保存します。透明な部分は白になります。AVIFを作れないブラウザでは、PNG形式（透明はそのまま）で保存されます。元の画像ファイルは変わりません。</p>
+  <p>自分のお店のロゴなど、使う権利のある画像だけを使ってください。</p>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>お店の見た目（つづき）：お客様の画面</h1>
+  <div class="two">
+    <figure><img src="img/14-pay-brand.jpg"><figcaption>お客様のお支払い画面。上の帯に、お店のロゴと店名が出ます。</figcaption></figure>
+    <figure><img src="img/18-receipt-brand.jpg"><figcaption>電子レシート。ロゴと、お店のリンクのボタンが出ます。保存したレシートの一覧にもロゴが並びます。</figcaption></figure>
+  </div>
+  <h2>お客様のスマホに届くしくみ</h2>
+  <p>ロゴ・色・メッセージ・リンクと店名は、お店の署名をつけて公開の通信網（Nostr）に置かれ、お客様のスマホがそれを読み込んで表示します（QRコードには、置き場所の目印だけが入ります）。誰でも見られるので、公開してよい内容だけにしてください。オフラインのときは、インターネットにつながったときに自動で反映します。反映の状態は「お店の見た目」の下に表示されます。</p>
+  <div class="box must"><span class="t">ロゴは「本物」の証明ではありません</span><p>ロゴは見た目のための表示です。偽のQRコードにも、似たロゴを表示することはできます。お客様の画面の金額と店名を確かめる、レジのQRコードにシールが貼られていないか確かめる、といったルール（第12章）は変わりません。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>店長・管理者向け：このお店の情報（お店のページ）</h1>
+  <p class="lead">「設定」→「このお店の情報」では、お客様やファンの方が見る「お店のページ」の内容を入れます。ロゴと色（「お店の見た目」）と一緒に、お店の署名つきで公開されます。どれも任意です。</p>
+  <table>
+    <tr><th style="width:24%">項目</th><th>内容と表示される場所</th></tr>
+    <tr><td class="k">ひとこと紹介</td><td>店名の下に出る一行（40文字まで）。お店のページ、お支払い完了画面、店頭POP。</td></tr>
+    <tr><td class="k">運営・作家名</td><td>お店を運営している人や作家の名前。本名でなく、活動名やペンネームでもかまいません。</td></tr>
+    <tr><td class="k">お店の紹介</td><td>お店のページに出る紹介文（300文字まで。改行できます）。</td></tr>
+    <tr><td class="k">リンク（最大4つ）</td><td>X、Instagram、BOOTH、pixiv、YouTube、LINE公式アカウントなど。サービス名は自動で付きます。1つ目はレシートにも出ます。</td></tr>
+    <tr><td class="k">イベント出店</td><td>イベント名とスペース・ブース番号。出店中は、お会計の画面、お客様のお支払い画面、レシート、店頭POPに出ます。</td></tr>
+    <tr><td class="k">お品書き</td><td>商品と値段を、お店のページの「お品書き」に載せます（最初はオン）。商品を変えると、自動で新しくなります。</td></tr>
+  </table>
+  <figure class="half"><img src="img/09c-settings-info.jpg"><figcaption>「このお店の情報」。右側に、お客様が見る「お店のページ」がそのまま表示されます。</figcaption></figure>
+  <div class="box note"><span class="t">イベントが終わったら</span><p>「イベント出店」の欄を消して保存してください。消し忘れると、次のお会計やレシートにも出店情報が出てしまいます。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>お店のページと店頭POP</h1>
+  <div class="two w70">
+    <figure><img src="img/20-store-page.jpg"><figcaption>お店のページ（お客様のスマホ）。紹介、出店情報、リンク、お品書き、その端末のレシートが並びます。</figcaption></figure>
+    <figure><img src="img/22-pop.jpg"><figcaption>店頭POP。はがきサイズ（100×148mm）に収まります。</figcaption></figure>
+  </div>
+  <h2>お客様がお店のページを開く方法</h2>
+  <ul>
+    <li>お支払い完了画面の「お店のページを見る」</li>
+    <li>電子レシートの「お店のページ」と、保存したレシートの一覧の上に並ぶお店のボタン</li>
+    <li>店頭POPのQRコードや、「このお店の情報」の「リンクをコピー」「共有」で送ったリンク（SNSやLINEのプレビューにはRejiの共通の画像が出ます。お店のロゴは、ページを開くと表示されます）</li>
+  </ul>
+  <h2>店頭POPの印刷</h2>
+  <p>「このお店の情報」→「店頭POPを印刷」。はがき用紙のほか、A4に印刷して切り取ってもかまいません。</p>
+  <p>「お客様の手数料は0円です」は、手数料なし決済が使えるときだけ印刷されます。使えないときは「決済手数料はかかりません（少額のネットワーク手数料のみ）」になります。</p>
+  <div class="box must"><span class="t">POPのQRコードで支払いはできません</span><p>POPのQRコードは、お店のページを開くためのものです。お支払いには、毎回レジに表示されるQRコードを使います。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>宛名つきの領収書と、識別情報</h1>
+  <div class="shots">
+    <figure class="phone"><img src="img/21-receipt-addressee.jpg"><figcaption>宛名と但し書きを入れた領収書（お客様のスマホ）。</figcaption></figure>
+    <figure><img src="img/09e-settings-info-ids.jpg"><figcaption>「このお店の情報」の下の方：識別情報（スタッフ・サポート用）。</figcaption></figure>
+  </div>
+  <h2>「領収書をください」と言われたら</h2>
+  <p>電子レシートの「宛名・但し書きを入れる（領収書）」から、お客様ご自身で宛名（会社名やお名前）と但し書き（最初は「お品代」）を入れられます。「〇〇 様」「但し　お品代として」「上記正に領収いたしました。」が入った領収書になり、印刷やPDF保存もできます。宛名はお客様のスマホの中だけに保存され、お店には送られません。</p>
+  <h2>識別情報（スタッフ・サポート用）</h2>
+  <p>受取アドレス（「入金の記録を見る」で、ブロックチェーン上の入金を確かめられます）、店主確認、プロフィールID、端末記号、データの保存場所、最後のバックアップが一目でわかります。お問い合わせのときは、この画面を見せると話が早く進みます。バックアップが古いときは「今すぐバックアップ」を押してください。</p>
+  <div class="box must"><span class="t">伝えてはいけないもの</span><p>秘密鍵（ガス用ウォレットのものを含む）とPINは、サポートを名乗る人にも絶対に伝えないでください。識別情報の画面には、伝えてはいけないものは出ていません。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>応援（投げ銭）を受け付ける</h1>
+  <p class="lead">お店のページの下の方に、控えめな「このお店を応援する（任意）」を出せます。お客様やファンが、JPYCを直接お店のウォレットに送れます。お会計の画面や店頭POPには出ません。Rejiは手数料を受け取らず、お金を預かることもありません。</p>
+  <div class="two w64">
+    <figure><img src="img/23-store-tip.jpg"><figcaption>お店のページの「このお店を応援する」（開いたところ）。</figcaption></figure>
+    <figure><img src="img/24-tip-done.jpg"><figcaption>送ったあと。「感謝」のはんこが押されます。</figcaption></figure>
+  </div>
+  <h2>受け付けるには</h2>
+  <ol>
+    <li>「設定」→「このお店の情報」→「応援（投げ銭）」で「店主の署名をして、応援を受け付ける」を押します。</li>
+    <li>受取アドレスのウォレットで署名します（このブラウザのウォレット、またはスマホでQRコードを読み取り）。</li>
+    <li>「受け付けています」と出たら完了です。やめるときは「応援の受け付けをやめる」を押します。</li>
+  </ol>
+  <h2>安全のためのしくみ</h2>
+  <ul>
+    <li>お客様のスマホは、受取先がお店のウォレット自身の署名で確かめられたものかを確認します。ほかの受取先が書かれたリンクからは送れません。</li>
+    <li>そのスマホにお店のレシートがあれば、レシートと同じ受取先かどうかも表示します。</li>
+    <li>応援には目に見えないしるしが付くため、お会計中に同じ金額の応援が届いても、売上と取り違えません。</li>
+    <li>受取アドレスを変えると、応援は自動で止まります。もう一度署名すると再開します。</li>
+  </ul>
+  <div class="box note"><span class="t">知っておくこと</span><p>応援は売上に含まれず、レシートも出ません。届いた応援は、ウォレットか「入金の記録を見る」で確かめてください。送る方が少額のネットワーク手数料を負担し、送ったJPYCは取り消せません。商品やサービスの代金を応援として受け取らないでください。税金の扱いは、税理士などの専門家にご確認ください。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>店長・管理者向け：接続先（RPC）</h1>
+  <p class="lead">Rejiは、お店のタブレットから直接、ブロックチェーンの無料の公開ノード（RPC）につないで入金を確認します。運営者のサーバーは通りません。通信はお店ごとに別々なので、ほかのお店が混んでいても影響を受けません。ふつうは設定不要です。</p>
+  <h2>自動で行っていること</h2>
+  <ul>
+    <li><strong>速いノードを選び、分散して使う：</strong>チェーンごとに4〜5か所の公開ノードを持ち、速くて空いているところを選びます。</li>
+    <li><strong>混雑・故障したノードは休ませる：</strong>「混雑（アクセス制限）」「応答なし」「遅れ」のノードは、しばらく使わずに別のノードに切り替え、時間をおいて自動で戻します。</li>
+    <li><strong>返事が遅いときは、別のノードにも同時に聞く：</strong>一番早い答えを使うので、1か所が遅くてもお会計は止まりません。</li>
+    <li><strong>入金は2か所で確かめる：</strong>入金を見つけたら、別の運営元のノードでも同じ取引があるか確かめてから「入金済」にします。1つのノードの誤りや不正だけで「入金済」になることはありません。</li>
+  </ul>
+  <h2>状態の見かた</h2>
+  <p>「設定」→「接続先（RPC）」に、受け付けているチェーンごとの状態が出ます。緑＝良好、黄＝1か所だけ応答（専用の接続先の追加をおすすめ）、赤＝応答なし（インターネット接続を確認）。チェーン名を押すと、ノードごとの状態が見られます。「今すぐ確認」で最新の状態に更新します。</p>
+  <div class="box note"><span class="t">公開ノードだけで足りる目安</span><p>1台のレジの通信は、請求画面を表示している間でも1秒に1回程度です。ふつうのお店（1日に数十〜百件程度のお会計）なら、公開ノードだけで足ります。お客様がとても多い、同じ場所で何台もレジを使う、スマホ回線（テザリング）で営業する場合は、次のページの「自分専用の接続先」をおすすめします。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>接続先（RPC）：自分専用の接続先を追加（任意）</h1>
+  <p class="lead">無料アカウントで作れる専用の接続先を追加すると、混雑の影響を受けにくくなります。専用の接続先は優先して使われ、つながらないときは公開ノードに自動で戻ります。</p>
+  <ol class="steps">
+    <li><b>サービスを選ぶ</b>「設定」→「接続先（RPC）」→「自分専用の接続先を追加（任意）」を開き、dRPC・Alchemy・Infura のどれかを選びます（QuickNode などは「その他（URL）」）。</li>
+    <li><b>無料登録してAPIキーをコピーする</b>「○○の無料登録ページを開く」から登録し（メールアドレスやGoogleアカウント）、ダッシュボードに表示される「APIキー」をコピーします。「その他」の場合は、接続先のURL（https://…）をコピーします。</li>
+    <li><b>貼り付けて「追加」を押す</b>Rejiが、そのキーで使えるチェーン（Polygon など）を自動で確かめて追加します。追加された接続先は一覧に「自分用」と表示され、「削除」でいつでも外せます。</li>
+  </ol>
+  <figure class="half"><img src="img/22-settings-rpc.jpg"><figcaption>「接続先（RPC）」：チェーンごとの状態と、自分専用の接続先の追加。</figcaption></figure>
+  <div class="box tip"><span class="t">APIキーの扱い</span><p>APIキーはこのタブレットとバックアップファイルにだけ保存され、ほかの人や運営者には送られません。サービスの管理画面で「使えるドメイン」をRejiのアドレスに限定しておくと、キーが知られても他で使われにくくなります。</p></div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section class="chapter">
+  <h1><span class="no">11</span>手数料なし決済（ガスレス）</h1>
+  <p class="lead">お客様がPOL（手数料）を持っていなくても、JPYCだけで支払えるしくみです。Polygonで使えます。手数料はお店が自分で用意する「ガス用ウォレット」から支払われ、運営者やサーバーは関わりません。</p>
+  <h2>しくみ</h2>
+  <ol class="steps">
+    <li><b>お客様はウォレットで「署名」するだけ</b>「この金額のJPYCをこのお店に送ります」という内容に署名します。お客様に手数料はかかりません。</li>
+    <li><b>署名がお店のレジに届く</b>署名は、Nostrという公開の通信網を通って、請求を表示しているレジに届きます。</li>
+    <li><b>レジのガス用ウォレットが送信する</b>レジは、画面の請求と金額・宛先がぴったり合う支払いだけをブロックチェーンに送り、手数料（POL）を支払います。</li>
+    <li><b>JPYCはお客様からお店へ直接届く</b>ガス用ウォレットはJPYCに触れません。入金の確認は通常の支払いと同じです。</li>
+  </ol>
+  <figure><img src="img/10b-settings-gasless.jpg"><figcaption>設定 →「手数料なし決済」：ガス用ウォレットの入金用QR、アドレス、残高、状態が表示されます。</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">11</span>手数料なし決済（つづき）</h1>
+  <h2>はじめる手順（店長）</h2>
+  <ol class="steps">
+    <li><b>店主確認をする</b>まだの場合は、第10章の手順で店主確認をします。</li>
+    <li><b>「ガス用ウォレットを作る」を押す</b>このタブレットの中に、手数料の支払い専用のウォレットが作られます。売上はここには入りません。</li>
+    <li><b>POLを入れる</b>店主のスマホのウォレットで、表示されたQRコードを読み取ると送金画面が開きます。Polygon（テストモードではAmoy）のPOLを0.5〜1 POLほど送ります。</li>
+    <li><b>状態が「有効」になったことを確認する</b>「お客様に手数料なしの支払いを案内する」にチェックが入っていれば、次の請求から手数料なしで支払えます。</li>
+  </ol>
+  <h2>ふだんの管理</h2>
+  <ul>
+    <li><strong>残高の確認：</strong>月に1回（忙しいお店は週に1回）、「残高を更新」で確認します。残高が0.02 POLを下回ると、お客様には自動で通常の支払い（手数料あり）が案内されます。</li>
+    <li><strong>残高を戻す：</strong>使わなくなったとき・端末を交換するときは、「残高を店主のウォレットへ戻す」を押し、店主の署名をします。</li>
+    <li><strong>オフにする：</strong>「お客様に手数料なしの支払いを案内する」のチェックを外して保存すると、通常の支払いだけになります。</li>
+  </ul>
+  <div class="box must"><span class="t">ガス用ウォレットはこのタブレットの中だけ</span><p>ガス用ウォレットの秘密鍵はこのタブレットのブラウザの中だけにあり、<strong>バックアップには含まれません</strong>。ブラウザのデータを消したり、「すべて消去」をしたりすると失われます。その前に必ず残高を戻してください。入れておくのは手数料分の少額のPOLだけにします。</p></div>
+  <div class="shots"><figure><img src="img/03b-charge-nofee.jpg"><figcaption>請求画面に「手数料なし（お店負担）でも受け付けています」と表示されます。</figcaption></figure>
+  <div class="box note" style="flex:1 1 0;margin:0"><span class="t">スタッフが知っておくこと</span><p>手数料なしの支払いは、請求画面を表示しているこのレジが送信します。お客様が支払い終わるまで、請求画面を閉じたり、タブレットをスリープにしたりしないでください。うまくいかないときは、お客様の画面で自動的に通常の支払いへ切り替わります（第7章）。</p></div></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">11</span>手数料なし決済：ガス用ウォレットQ&amp;A</h1>
+  <p class="lead">お店の方や、ウォレットにくわしい方からよくいただく質問です。ガス用ウォレットは、売上を入れる金庫ではなく、手数料を払うための「釣り銭」として設計しています。</p>
+  <table>
+    <tr><th style="width:26%">質問</th><th>答え</th></tr>
+    <tr><td class="k">ガス用ウォレットとは？</td><td>お客様が手数料なしで払えるように、ネットワーク手数料（POL）をお店が代わりに払うための小口のウォレットです。レジの「釣り銭」のようなもので、売上（JPYC）は入りません。売上は、お店の受取ウォレットに直接届きます。</td></tr>
+    <tr><td class="k">誰が管理しているの？</td><td>お店自身です。鍵はお店の端末の中で作られ、運営者は鍵を持っておらず、POLを動かすこともできません（Rejiにはサーバーがありません）。POLはお店が自分で入れ、店主の署名でいつでも店主のウォレットに戻せます。</td></tr>
+    <tr><td class="k">なぜバックアップに入らないの？</td><td>バックアップのファイルは、AirDrop・メール・LINE・クラウドなどで持ち運ばれ、あとに残りやすいためです。お金を動かせる鍵を入れないことで、ファイルがほかの人の手に渡っても資金は守られます。</td></tr>
+    <tr><td class="k">端末が壊れたら？</td><td>中のPOLは失われますが、入れておくのは少額なので、損失はその範囲に限られます。新しい端末で作り直せば、すぐに使えます。復元できるようにしたい場合は、店主の署名のうえで鍵を表示し、紙などオフラインで保管できます（保管はお店の責任です）。</td></tr>
+    <tr><td class="k">いくら入れておけばいい？</td><td>手数料分の少額だけです。1 POL程度でも、多くの支払いをまかなえます（ネットワークの混み具合によります）。使わない期間は、店主のウォレットに戻しておくと安心です。</td></tr>
+    <tr><td class="k">気をつけることは？</td><td>ブラウザのデータを消す・「すべて消去」をする・ブラウザを削除する前に、必ず残高を戻します。iPhone・iPadでは、Rejiをホーム画面に追加して使います（Safariは、しばらく開かないサイトのデータを自動で消すことがあります）。レジの端末は、拡張機能を入れていないブラウザで、PINロックをかけて使います。</td></tr>
+    <tr><td class="k">法令との関係は？</td><td>Rejiの運営者は、お客様やお店の資産や鍵を預からず、送金の仲介もせず、手数料も受け取りません。お店ごとの取り扱い（会計・税務・法令の確認など）は、必要に応じて専門家にご相談ください。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 12 ============ -->
+<section class="chapter">
+  <h1><span class="no">12</span>セキュリティのルール</h1>
+  <ol class="steps">
+    <li><b>秘密鍵・シードフレーズを扱わない</b>お客様にも、店のウォレットについても、聞かない・入力しない・写真に撮らない・人に伝えない。Rejiは一切必要としません。「サポートです」と名乗る人に聞かれても答えません。</li>
+    <li><b>入金はレジ画面で確認する</b>商品を渡す判断は、必ずレジの「入金済」表示で行います。お客様のスマホ画面やスクリーンショットでは判断しません。</li>
+    <li><b>受取アドレスを変更しない</b>設定の「受取ウォレットのアドレス」は店長だけが変更します（店主確認をしている場合、変更には店主のウォレットでの署名が必要です）。誰かに頼まれても変えません。</li>
+    <li><b>PINを共有しない</b>PINを他人に教えたり、タブレットに貼ったりしません。</li>
+    <li><b>知らないリンクやQRを開かない</b>お店のタブレットで、関係のないサイトやQRコードを開きません。</li>
+    <li><b>タブレットを放置しない</b>離れるときは売上画面などを閉じ、必要なら「今すぐロック」を使います。</li>
+    <li><b>テストモードで営業しない</b>黄色いしま模様の帯が出ていたら、店長に連絡します。</li>
+    <li><b>赤い帯が出たらお会計を止める</b>「受取アドレスの設定が店主の署名と一致しません」は、設定が書き換えられた可能性を示します。すぐに店長に連絡します。</li>
+    <li><b>お客様にはレジの画面のQRだけを読んでもらう</b>店内に貼られた見覚えのないQRコードや、他の人から送られた支払いリンクは使わないよう案内します。</li>
+    <li><b>レジ専用のブラウザで使う</b>レジのタブレットには、不要なブラウザ拡張機能やアプリを入れません。拡張機能は、画面の内容や保存データを読める場合があります。</li>
+  </ol>
+  <div class="box note"><span class="t">データの保存場所</span><p>売上・商品・設定は、このタブレットのブラウザの中だけに保存されています。外部のサーバーには送られません。そのため、ブラウザのデータを消すと売上記録も消えます。バックアップは店長が定期的に行います。</p></div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section class="chapter">
+  <h1><span class="no">13</span>用語集</h1>
+  <table>
+    <tr><th style="width:27%">用語</th><th>意味</th></tr>
+    <tr><td class="k">JPYC</td><td>日本円建ての電子決済手段。1 JPYC＝1円として扱います。</td></tr>
+    <tr><td class="k">ウォレット</td><td>JPYCなどを保管・送金するアプリ（HashPort Wallet、MetaMask など）。お店にもお客様にもそれぞれあります。</td></tr>
+    <tr><td class="k">アドレス</td><td>ウォレットの受取先を表す「0x」から始まる42文字の文字列。銀行の口座番号のようなもので、公開しても問題ありません。</td></tr>
+    <tr><td class="k">秘密鍵・シードフレーズ</td><td>ウォレットを操作するための暗証情報。知られると資産を盗まれます。絶対に扱いません。</td></tr>
+    <tr><td class="k">チェーン（ネットワーク）</td><td>JPYCが動いているブロックチェーンの種類。Polygon、Avalanche、Ethereum、Kaia など。同じJPYCでもチェーンが違うと別扱いです。</td></tr>
+    <tr><td class="k">POL／ガス代</td><td>Polygonでの送金にかかるネットワーク手数料と、その支払いに使う通貨。</td></tr>
+    <tr><td class="k">手数料なし決済（ガスレス）</td><td>お客様の代わりに、お店のガス用ウォレットがネットワーク手数料を払うしくみ（第11章）。</td></tr>
+    <tr><td class="k">ガス用ウォレット</td><td>手数料の支払い専用に、レジの端末の中に作るウォレット。店主が少額のPOLを入れて管理します。</td></tr>
+    <tr><td class="k">店主確認</td><td>受取アドレスのウォレットで署名して、そのアドレスが店主のものだと確認すること。送金も手数料もありません。</td></tr>
+    <tr><td class="k">RPC（接続先ノード）</td><td>ブロックチェーンの情報を読み書きするための窓口。Rejiは無料の公開ノードを自動で選んで使い、必要なら自分専用の接続先も追加できます（第10章）。</td></tr>
+    <tr><td class="k">Nostr（ノストル）</td><td>だれでも使える公開の通信網。手数料なし決済の署名や、スマホでの店主確認の署名をレジに届けるのに使います。</td></tr>
+    <tr><td class="k">取引ID</td><td>1回の送金を表す「0x」から始まる66文字の文字列（トランザクションハッシュ）。入金の確認に使います。</td></tr>
+    <tr><td class="k">確認中／確定</td><td>支払いがブロックチェーンに記録されると「確認中」、その後いくつかのブロックが積み重なると「確定」になります。</td></tr>
+    <tr><td class="k">エクスプローラー</td><td>ブロックチェーン上の取引を誰でも確認できるウェブサイト（Polygonscan など）。</td></tr>
+    <tr><td class="k">テストモード</td><td>無料のテスト用JPYCで練習するモード。本物のお金は動きません。</td></tr>
+    <tr><td class="k">電子レシート</td><td>QRコードからお客様のスマホに保存できるレシート。支払いをブロックチェーン上で確認できます。</td></tr>
+    <tr><td class="k">未入金</td><td>期限切れや取り消しで、入金が確認できなかった請求。「再確認」で遅れた入金を探せます。</td></tr>
+  </table>
+</section>
+
+<!-- ============ quick reference ============ -->
+<section class="chapter">
+  <h1><span class="no">付</span>クイックリファレンス</h1>
+  <div class="quick">
+    <h2>お会計の流れ</h2>
+    <div class="flow">
+      <div><b>1</b>商品をタップ</div>
+      <div><b>2</b>「¥○○ を請求」</div>
+      <div><b>3</b>QRを見せる</div>
+      <div><b>4</b>赤い「入金済」の印を確認</div>
+      <div><b>5</b>レシート →「次のお会計」</div>
+    </div>
+    <h2>困ったときの早見表</h2>
+    <table>
+      <tr><th style="width:38%">こんなとき</th><th>まずこれ</th></tr>
+      <tr><td class="k">払ったのに画面が変わらない</td><td>1分待つ →「取引IDで確認する」→ ダメなら店長</td></tr>
+      <tr><td class="k">金額の違う入金</td><td>金額を確認 →「この入金を使う」（不足は店長に確認）</td></tr>
+      <tr><td class="k">期限切れ</td><td>「10分延長」→ QRを読み直してもらう</td></tr>
+      <tr><td class="k">請求を間違えた</td><td>「請求を取り消す」→ 直して再請求</td></tr>
+      <tr><td class="k">後から払われた</td><td>売上 → 未入金 →「再確認」</td></tr>
+      <tr><td class="k">右上が赤い</td><td>Wi-Fi確認 → 少し待つ → 続けば店長</td></tr>
+      <tr><td class="k">返金してほしい</td><td>レシート番号・支払元・金額・理由をメモ → 店長</td></tr>
+    </table>
+    <div class="box must"><span class="t">3つの約束</span>
+      <p>① 秘密鍵・シードフレーズは扱わない　② 入金はレジ画面の「入金済」で確認　③ 黄色いしま模様（テストモード）で営業しない</p></div>
+  </div>
+  <div class="box note"><span class="t">お問い合わせ</span><p>Rejiの使い方や不具合のご相談は、<strong>reji@mail.grokbot.com</strong> へお送りください。Rejiが、シードフレーズ（復元フレーズ）や秘密鍵をおたずねすることは絶対にありません。Rejiのサポートからのメールは、このアドレスからだけお送りします。取り置き・出張・2台目のレジなどの使い方は、サイトの「使い方のアイデア」のページにまとめています。</p></div>
+</section>
+
+</body>
+</html>

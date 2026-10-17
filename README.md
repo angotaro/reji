@@ -158,6 +158,8 @@ npm i -D playwright && npx playwright install chromium
 node tests/e2e.mjs                 # end to end (156 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
+python3 manual/images.py           # staff manual images from tests/shots/
+node manual/build.mjs              # staff manual source (manual/) → docs/reji-manual-ja.pdf
 node tests/landing-shots.mjs       # landing screenshots and demo frames (after e2e)
 ```
 

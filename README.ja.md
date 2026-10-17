@@ -66,6 +66,8 @@ npm i -D playwright && npx playwright install chromium
 node tests/e2e.mjs                 # E2Eテスト（156項目。スクリーンショットは tests/shots/）
 node tests/devices.mjs             # スマホ・タブレット13機種 × 11画面
 node tests/offline-workers.mjs     # Workers の .html 転送のもとでのオフライン起動
+python3 manual/images.py           # スタッフマニュアルの画像を作る（tests/shots/ から）
+node manual/build.mjs              # スタッフマニュアルの元データ（manual/）から docs/reji-manual-ja.pdf を作る
 ```
 
 ## ライセンス

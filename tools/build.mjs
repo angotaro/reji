@@ -65,11 +65,16 @@ for (const f of ['terms.html', 'privacy.html']) {
 }
 console.log(operator || contact ? `legal pages: operator ${operator ? 'set' : '-'}, contact ${contact ? 'set' : '-'}` : 'legal pages: OPERATOR_NAME / CONTACT not set (contact section stays hidden)');
 
-// 4) Keep tests, tools and config files off the site even if .assetsignore was lost on upload
-//    (dot files are hidden on Macs, so drag-and-drop to GitHub can skip them).
-if (!existsSync('.assetsignore')) {
-  writeFileSync('.assetsignore', `# Published: the site only. Kept in the repository but not served:\n.git\n.github\nnode_modules\ntests\ntools\nwrangler.jsonc\n.assetsignore\n.gitignore\n.nojekyll\nREADME.md\nvercel.json\npackage.json\npackage-lock.json\n`);
-  console.log('assets: .assetsignore was missing, recreated it');
+// 4) Keep tests, tools, the manual's source and config files off the site, even if .assetsignore was lost
+//    on upload (dot files are hidden on Macs, so drag-and-drop to GitHub can skip them) or predates an entry.
+const KEEP_OFF = ['.git', '.github', 'node_modules', 'tests', 'tools', 'manual', 'wrangler.jsonc', '.assetsignore', '.gitignore', '.nojekyll',
+  'README.md', 'README.ja.md', 'vercel.json', 'package.json', 'package-lock.json'];
+const ignoreText = existsSync('.assetsignore') ? readFileSync('.assetsignore', 'utf8') : '# Published: the site only. Kept in the repository but not served:\n';
+const listed = new Set(ignoreText.split('\n').map((l) => l.trim()));
+const missing = KEEP_OFF.filter((x) => !listed.has(x));
+if (missing.length) {
+  writeFileSync('.assetsignore', ignoreText.replace(/\n?$/, '\n') + missing.join('\n') + '\n');
+  console.log(`assets: kept off the site: ${missing.join(', ')}`);
 }
 
 const sha = String(env.WORKERS_CI_COMMIT_SHA || env.CF_PAGES_COMMIT_SHA || '').slice(0, 8) || Date.now().toString(36);
