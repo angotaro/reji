@@ -9,6 +9,8 @@ import { exactUnits, formatUnits } from './evm.js';
 import { state, saveSales, saveUnpaid, isTestnet, on } from './state.js';
 import { icon, modal, confirmDialog, requirePin, printHtml, chainBadge } from './ui.js';
 import { recheckUnpaid, bookUnpaid, trackConfirmations, printSale, confText } from './charge.js';
+import { isLater, isOpenLater } from './latercore.js';
+import { showLaterQr, reissue, closeLater } from './later.js';
 
 const RANGES = ['today', 'yesterday', '7d', 'month', 'all'];
 let range = 'today';
@@ -117,7 +119,7 @@ function renderBody() {
   const keepOpen = $('.z-items', root)?.open;
   const list = filtered();
   $('#sales-summary', root).innerHTML = String(summaryHtml(list, summarize(list)));
-  $('#sales-ledger', root).innerHTML = String(html`${unpaidHtml()}${ledgerHtml(list)}`);
+  $('#sales-ledger', root).innerHTML = String(html`${laterHtml()}${unpaidHtml()}${ledgerHtml(list)}`);
   if (keepOpen) $('.z-items', root).open = true;
 }
 
@@ -181,9 +183,60 @@ function rowHtml(s) {
   </button></li>`;
 }
 
+// ---- pay later (後払い): what is still owed, and what the store closed ----
+function laterHtml() {
+  const test = isTestnet();
+  const all = state.unpaid.filter((u) => isLater(u) && (u.network === 'testnet') === test);
+  if (!all.length) return '';
+  const open = all.filter(isOpenLater).sort((a, b) => a.payBy - b.payBy);
+  const closed = all.filter((u) => !isOpenLater(u)).sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0));
+  const sum = open.reduce((n, u) => n + u.amountYen, 0);
+  return html`<div class="later-box">
+    <h3 class="unpaid-head">${t('later.listTitle', { n: open.length, sum: yen(sum) })}</h3>
+    <p class="unpaid-text">${t('later.listText')}</p>
+    ${open.length ? html`<ul class="later-list">${open.map((u) => html`<li data-st="${u.status}">
+      <div class="ll-main"><b>${yen(u.amountYen)}</b><span class="ll-no">${u.no}</span>${u.memo ? html`<span class="ll-memo">${u.memo}</span>` : ''}</div>
+      <div class="ll-sub">${u.status === 'uncollected'
+        ? html`<span class="ll-badge over">${t('later.overdue', { date: fmtDateTime(u.payBy) })}</span>`
+        : html`<span class="ll-badge">${t('later.waiting', { date: fmtDateTime(u.payBy) })}</span>`}<span>${t('later.since', { date: fmtDateTime(u.laterAt || u.createdAt) })}</span></div>
+      <div class="ll-actions">
+        ${u.status === 'uncollected'
+          ? html`<button type="button" class="btn small primary" data-act="later-reissue" data-id="${u.id}">${t('later.reissue')}</button>`
+          : html`<button type="button" class="btn small" data-act="later-qr" data-id="${u.id}">${icon('qr')}<span>${t('later.showQr')}</span></button>`}
+        <button type="button" class="btn small ghost" data-act="later-settle" data-id="${u.id}">${t('later.settle')}</button>
+        <button type="button" class="btn small ghost" data-act="later-writeoff" data-id="${u.id}">${t('later.writeoff')}</button>
+      </div></li>`)}</ul>` : ''}
+    ${closed.length ? html`<details class="later-closed"><summary>${t('later.closedTitle', { n: closed.length })}</summary>
+      <ul>${closed.map((u) => html`<li><span>${yen(u.amountYen)} · ${u.no}${u.memo ? ` · ${u.memo}` : ''}</span>
+        <span>${t(u.status === 'settled' ? 'later.settledAt' : 'later.writtenoffAt', { date: fmtDateTime(u.closedAt) })}${u.closeNote ? `（${u.closeNote}）` : ''}</span></li>`)}</ul></details>` : ''}
+  </div>`;
+}
+
+function askLaterNote(status) {
+  const settle = status === 'settled';
+  const m = modal(html`<h2 class="modal-title">${t(settle ? 'later.settleTitle' : 'later.writeoffTitle')}</h2>
+    <p class="modal-text">${t(settle ? 'later.settleText' : 'later.writeoffText')}</p>
+    <label class="field"><span class="label">${t('later.note')}</span>
+      <input name="note" type="text" maxlength="80" autocomplete="off" placeholder="${t(settle ? 'later.notePhSettle' : 'later.notePhWriteoff')}"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>${t('common.cancel')}</button>
+      <button type="button" class="btn ${settle ? 'primary' : 'danger'}" data-ok>${t(settle ? 'later.settleOk' : 'later.writeoffOk')}</button>
+    </div>`, { label: t(settle ? 'later.settleTitle' : 'later.writeoffTitle'), size: 'small' });
+  m.el.querySelector('[data-ok]').addEventListener('click', () => m.close(m.el.querySelector('[name="note"]').value));
+  return m.result.then((v) => (typeof v === 'string' ? v : null));
+}
+
+async function laterClose(id, status) {
+  if (!(await requirePin(state.settings))) return;
+  const note = await askLaterNote(status);
+  if (note === null) return;
+  closeLater(id, status, note);
+  toast(t(status === 'settled' ? 'later.settledToast' : 'later.writtenoffToast'));
+}
+
 function unpaidHtml() {
   const test = isTestnet();
-  const list = state.unpaid.filter((u) => (u.network === 'testnet') === test);
+  const list = state.unpaid.filter((u) => !isLater(u) && (u.network === 'testnet') === test);
   if (!list.length) return '';
   return html`<div class="unpaid">
     <h3 class="unpaid-head">${t('sales.unpaidTitle', { n: list.length })}</h3>
@@ -212,6 +265,10 @@ async function onClick(e) {
   else if (act === 'csv-sales') exportSales();
   else if (act === 'csv-items') exportItems();
   else if (act === 'recheck') recheck(b.dataset.id, b);
+  else if (act === 'later-qr') { const u = state.unpaid.find((x) => x.id === b.dataset.id); if (u) showLaterQr(u); }
+  else if (act === 'later-reissue') { const u = reissue(b.dataset.id); if (u) showLaterQr(u); }
+  else if (act === 'later-settle') laterClose(b.dataset.id, 'settled');
+  else if (act === 'later-writeoff') laterClose(b.dataset.id, 'writtenoff');
   else if (act === 'dismiss') dismiss(b.dataset.id);
 }
 
@@ -283,7 +340,7 @@ async function openSale(id) {
     <div class="sale-side">
       <p class="sale-status" data-state="${s.flag === 'failed' ? 'bad' : s.confirmed ? 'ok' : 'wait'}">${confText(s)}</p>
       ${s.match && s.match !== 'exact' ? html`<p class="paid-flag">${t('match.' + s.match)}</p>` : ''}
-      ${s.late ? html`<p class="hint">${t('sales.lateNote')}</p>` : ''}
+      ${s.late ? html`<p class="hint">${t(s.payLater ? 'later.saleNote' : 'sales.lateNote')}</p>` : ''}
       <div class="qr-frame small">${raw(qrSvg(link, { ecl: 'L', title: t('charge.receiptQr') }))}</div>
       <p class="hint">${t('sales.qrHint')}</p>
       <div class="btn-col">

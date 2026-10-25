@@ -96,6 +96,19 @@ Reji installs like an app: the manifest opens the register (`app.html`) in its o
 
 Once a store is set up, Reji asks the browser to keep its data out of automatic cleanup (`navigator.storage.persist()`, at most once a month).
 
+### Outages and emergencies: pay later (後払い)
+
+The register keeps working without a connection: the app, the cart and the QR codes all load offline, and payments made during an outage are found once the register is back online. A banner tells staff what still works.
+
+For when a payment can't be confirmed on the spot, a store can turn on **pay later** (Settings → レジの動作; off by default):
+- **The handover:** the customer takes the goods and keeps a payment QR valid for days (as a photo, or a printed slip), then pays from any wallet once they have a connection.
+- **Automatic collection:** while the register is open and online, it scans for those payments, resuming where it left off so a long outage catches up in steps, and books them as sales.
+- **Matching:** exact amounts match their sale, as do payments to an earlier link; a plain typed amount matches only when it's unambiguous.
+- **Limits:** a cap per sale and a cap on everything still owed.
+- **When the window passes:** the store can make a new link, record the sale as paid another way, or stop collecting; the last two need the PIN.
+
+Pay later is trust-based (the goods go before the payment), so it is opt-in and capped; the rules are in `assets/js/latercore.js`.
+
 ### Choosing the site address
 
 Wallet phishing filters (MetaMask and others) block addresses that look like a crypto brand: `reji.jpyc.workers.dev` gets a full-screen "this site may be harmful" warning before the page even opens. Use a neutral project name (for example `reji-pos.pages.dev`) or your own domain. `tools/build.mjs` warns in the build log, and Settings → このお店の情報 shows a warning, if the address contains words such as jpyc, metamask, hashport, wallet or airdrop. Moving to a new address doesn't carry a store's data across (it lives in the browser, per address): back up on the old address and restore on the new one.
@@ -153,9 +166,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (59)
+node --test                        # unit tests (61)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (156 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (174 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 python3 manual/images.py           # staff manual images from tests/shots/

@@ -322,6 +322,16 @@ try {
   await page.click('[data-act="present"]');
   await sleep(300);
   await page.screenshot({ path: `${OUT}/05-present.png` });
+  const turned = () => page.evaluate(() => getComputedStyle(document.getElementById('overlay')).transform);
+  await page.click('[data-act="flip"]');
+  ok('present: 「上下を反転」 turns the customer view around for staff holding the phone upside down', (await turned()).startsWith('matrix(-1'));
+  await page.screenshot({ path: `${OUT}/05b-present-flipped.png` });
+  await page.click('[data-act="present-exit"]');
+  ok('present: 「戻る」 brings back the normal staff view', (await turned()) === 'none');
+  await page.click('[data-act="present"]');
+  ok('present: the flip is remembered next time', (await turned()).startsWith('matrix(-1'));
+  await page.click('[data-act="flip"]');
+  ok('present: tapping again turns it back', (await turned()) === 'none' && (await page.evaluate(() => localStorage.getItem('reji:presentFlip:v1'))) === 'false');
   await page.click('[data-act="present-exit"]');
   const p2 = await page.evaluate(() => JSON.parse(localStorage.getItem('reji:pending:v1')));
   await page.click('[data-act="cancel"]');
@@ -735,6 +745,136 @@ try {
   await ip.waitForSelector('.ob-choice');
   ok('iPhone: Reji knows to show the Share → Add to Home Screen steps', (await ip.evaluate(() => document.documentElement.dataset.install)) === 'ios');
   await ictx.close();
+
+  // ---- pay later (後払い): outages and emergencies ----
+  const unpaidLS = () => page.evaluate(() => JSON.parse(localStorage.getItem('reji:unpaid:v1') || '[]'));
+  const setLS = (patch) => page.evaluate((p) => { const k = 'reji:settings:v1'; localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k)), ...p })); }, patch);
+  const handOver = async (memo) => {
+    await page.goto(`${BASE}app.html#/register`);
+    await page.reload(); // settings changed in storage take effect on load
+    await page.waitForSelector('.tile', { timeout: 10000 }).catch(async (e) => { await page.screenshot({ path: `${OUT}/debug-later.png` }); throw e; });
+    await page.click('.tile:has-text("抹茶ラテ")');
+    await page.click('.tape-actions .charge-btn');
+    await page.waitForSelector('.charge[data-phase="waiting"]');
+    await page.click('.charge [data-act="later"]');
+    await page.waitForSelector('.modal .later-qr svg');
+    if (memo) await page.fill('.modal [name="memo"]', memo);
+  };
+  const collected = async (id) => { // the register looks again whenever it comes online
+    for (let i = 0; i < 14; i++) {
+      await page.evaluate(() => dispatchEvent(new Event('online')));
+      await sleep(450);
+      if (!(await unpaidLS()).some((u) => u.id === id)) return true;
+    }
+    return false;
+  };
+  const langBefore = await page.evaluate(() => localStorage.getItem('reji:lang'));
+  await page.evaluate(() => localStorage.setItem('reji:lang', 'ja')); // Japanese screenshots for the manual
+  await setLS({ payLater: true, laterMax: 3000, laterTotal: 20000, laterDays: 7, regMode: 'menu' });
+  await handOver('山田さま');
+  ok('pay later: the charge screen offers it, with a QR to photograph and a slip to print', await page.locator('.modal [data-act="later-print"]').isVisible());
+  await page.screenshot({ path: `${OUT}/30-later-dialog.png` });
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('#overlay', { state: 'hidden' });
+  const later1 = (await unpaidLS()).find((u) => u.status === 'later');
+  ok('pay later: handed over with a link valid for days, the memo kept, no no-fee relay, the cart cleared',
+    !!later1 && later1.memo === '山田さま' && later1.payBy - Date.now() > 6 * 86_400_000 && !later1.relayChannel
+    && (await page.evaluate(() => JSON.parse(localStorage.getItem('reji:cart:v1') || '[]').length)) === 0);
+  const laterUrl = await page.evaluate((u) => import('./assets/js/later.js').then((m) => m.laterLink(u)), later1);
+  const lp = await cust.newPage();
+  await lp.goto(laterUrl);
+  await lp.waitForSelector('#valid');
+  ok('pay later: the customer\'s payment page shows the deadline as a date', (await lp.textContent('#valid')).includes('まで'));
+  await lp.close();
+  addTransfer({ value: BigInt(later1.amountYen) * UNIT + BigInt(later1.suffix), tx: '0x' + 'a1'.repeat(32) });
+  ok('pay later: the payment that comes later is found and booked as a sale', await collected(later1.id)
+    && (await page.evaluate((id) => JSON.parse(localStorage.getItem('reji:sales:v1')).find((x) => x.id === id)?.payLater === true, later1.id)));
+
+  await handOver('佐藤さま');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('#overlay', { state: 'hidden' });
+  const later2 = (await unpaidLS()).find((u) => u.status === 'later');
+  await page.goto(`${BASE}app.html#/sales`);
+  await page.waitForSelector('.later-box');
+  ok('sales: what is still owed, with the memo and the deadline', (await page.locator('.later-list li').count()) === 1 && (await page.textContent('.later-list')).includes('佐藤さま'));
+  await page.screenshot({ path: `${OUT}/31-later-list.png` });
+  await page.evaluate((id) => { const k = 'reji:unpaid:v1'; const a = JSON.parse(localStorage.getItem(k)); a.find((u) => u.id === id).payBy = Date.now() - 1000; localStorage.setItem(k, JSON.stringify(a)); }, later2.id);
+  await page.reload();
+  await page.waitForSelector('.later-list li[data-st="uncollected"]', { timeout: 8000 });
+  ok('pay later: past the window, it is uncollected, with the store\'s options', await page.locator('[data-act="later-reissue"]').isVisible()
+    && await page.locator('[data-act="later-settle"]').isVisible() && await page.locator('[data-act="later-writeoff"]').isVisible());
+  await page.screenshot({ path: `${OUT}/32-later-overdue.png` });
+  await page.click('[data-act="later-reissue"]');
+  await page.waitForSelector('.modal .later-qr svg');
+  const re2 = (await unpaidLS()).find((u) => u.id === later2.id);
+  ok('a new link: a new fraction and deadline, the earlier one remembered', re2.status === 'later' && re2.suffix !== later2.suffix
+    && re2.oldSuffixes.includes(later2.suffix) && re2.payBy > Date.now() + 6 * 86_400_000);
+  await page.click('.modal [data-close]');
+  addTransfer({ value: BigInt(later2.amountYen) * UNIT + BigInt(later2.suffix), tx: '0x' + 'a2'.repeat(32) }); // paid with the first link
+  ok('pay later: a payment to the earlier link still closes it', await collected(later2.id));
+
+  await handOver('');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('#overlay', { state: 'hidden' });
+  const later3 = (await unpaidLS()).find((u) => u.status === 'later');
+  await page.goto(`${BASE}app.html#/sales`);
+  await page.waitForSelector('.later-list li');
+  await page.click('[data-act="later-settle"]');
+  if (await page.locator('.pin-form').isVisible().catch(() => false)) throw new Error('unexpected PIN prompt');
+  await page.waitForSelector('.modal [name="note"]');
+  await page.fill('.modal [name="note"]', '現金で受け取り');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('.later-closed');
+  const settled3 = (await unpaidLS()).find((u) => u.id === later3.id);
+  ok('pay later: "paid another way" is recorded and closed, and is not a JPYC sale', settled3.status === 'settled' && settled3.closeNote === '現金で受け取り'
+    && !(await page.evaluate((id) => JSON.parse(localStorage.getItem('reji:sales:v1')).some((x) => x.id === id), later3.id)));
+
+  await setLS({ laterMax: 500 });
+  await page.goto(`${BASE}app.html#/register`);
+  await page.reload();
+  await page.waitForSelector('.tile');
+  await page.click('.tile:has-text("抹茶ラテ")');
+  await page.click('.tape-actions .charge-btn');
+  await page.waitForSelector('.charge[data-phase="waiting"]');
+  await page.click('.charge [data-act="later"]');
+  await sleep(300);
+  ok('pay later: above the per-sale limit, the goods are not handed over unpaid', !(await page.locator('.modal .later-qr').count())
+    && (await page.textContent('#toast')).includes('500'));
+  await page.click('[data-act="cancel"]');
+  if (await page.locator('.modal [data-ok]').isVisible().catch(() => false)) await page.click('.modal [data-ok]');
+  await page.waitForSelector('#overlay', { state: 'hidden' });
+
+  await page.context().setOffline(true);
+  await page.waitForSelector('.net-banner:not([hidden])', { timeout: 6000 });
+  const banner = await page.textContent('.net-banner');
+  ok('offline: the register says sales go on, and points to pay later', /お会計の画面は使えます|keep charging/.test(banner) && /あとで払ってもらう|Pay later/.test(banner), banner);
+  await page.screenshot({ path: `${OUT}/33-offline-banner.png` });
+  await page.context().setOffline(false);
+  await page.waitForSelector('.net-banner', { state: 'hidden', timeout: 8000 });
+  ok('back online: the banner goes away', true);
+  await setLS({ payLater: false, laterMax: 3000 });
+  await page.evaluate((l) => (l ? localStorage.setItem('reji:lang', l) : localStorage.removeItem('reji:lang')), langBefore);
+  await page.reload();
+
+  const lsctx = await context(browser, { viewport: { width: 1180, height: 820 } });
+  await lsctx.addInitScript((addr) => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.setItem('reji:settings:v1', JSON.stringify({ storeName: '喫茶たまご', address: addr, chains: [137], network: 'testnet' }));
+    localStorage.setItem('reji:onboard:v1', JSON.stringify({ step: 0, done: {}, skipped: {}, finished: true }));
+  }, MERCHANT);
+  const lsp = await lsctx.newPage();
+  await lsp.goto(`${BASE}app.html#/settings?s=register`);
+  await lsp.waitForSelector('[name="payLater"]');
+  ok('settings: pay later is off by default, with its limits and days', !(await lsp.isChecked('[name="payLater"]'))
+    && (await lsp.inputValue('[name="laterMax"]')) === '3000' && (await lsp.inputValue('[name="laterTotal"]')) === '20000' && (await lsp.inputValue('[name="laterDays"]')) === '7');
+  await lsp.check('[name="payLater"]');
+  await lsp.fill('[name="laterDays"]', '3');
+  await lsp.click('#save-bar button[type="submit"]');
+  await sleep(300);
+  const saved = await lsp.evaluate(() => JSON.parse(localStorage.getItem('reji:settings:v1')));
+  ok('settings: turning pay later on and changing the days is saved', saved.payLater === true && saved.laterDays === 3);
+  await lsctx.close();
 
   // ---- moving the store to another device (お店の引き継ぎ) ----
   await page.evaluate(() => localStorage.setItem('reji:lang', 'ja')); // the guide page is in Japanese

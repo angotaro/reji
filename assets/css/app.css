@@ -169,14 +169,17 @@ body.app { overflow: hidden; }
 .o-meta { grid-column: 1; color: var(--ink-soft); font-size: var(--t-xs); }
 .others-list .btn { grid-column: 2; grid-row: 1 / span 2; }
 .charge-foot { display: flex; justify-content: space-between; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-.present-exit { display: none; }
+.present-exit, .present-flip { display: none; }
 #overlay.present .charge-side, #overlay.present .bill-no, #overlay.present .bill-desc, #overlay.present .seg-sm { display: none; }
 #overlay.present .charge-stage { grid-template-columns: 1fr; justify-items: center; padding-top: 1.25rem; }
-#overlay.present .qr-frame { width: min(68vh, 88vw, 620px); }
-#overlay.present .present-exit {
+#overlay.present .qr-frame { width: min(var(--qr-fit, 68vh), 88vw, 620px); } /* --qr-fit: the height left under the amount (charge.js) */
+#overlay.present .present-exit, #overlay.present .present-flip {
   position: fixed; top: max(0.75rem, env(safe-area-inset-top)); right: 0.75rem; z-index: 2; display: inline-flex;
   background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .35); color: #fff;
 }
+#overlay.present .present-flip { right: auto; left: 0.75rem; }
+/* staff holding the phone upside down to show it: the whole customer view turns around */
+#overlay.present.flipped { transform: rotate(180deg); }
 
 /* paid: the slip gets its stamp */
 .paid {
@@ -707,3 +710,38 @@ html[data-install="prompt"] .install-card [data-for="prompt"], html[data-install
 html[data-install="inapp"] .install-card [data-for="inapp"], html[data-install="other"] .install-card [data-for="other"],
 html[data-install="installed"] .install-card [data-for="installed"] { display: block; }
 .install-card .ic-title { text-wrap: balance; word-break: auto-phrase; }
+
+/* ---- offline banner ---- */
+.net-banner { margin: 0; padding: 0.55rem 1rem; background: #fff4d6; color: #5c4400; border-bottom: 1px solid #ecd9a2; font-size: 0.9rem; line-height: 1.6; }
+/* ---- pay later (後払い) ---- */
+.later-qr { display: grid; place-items: center; margin: 0.6rem 0; }
+.later-qr svg { width: min(220px, 60vw); height: auto; }
+.later-amount { display: flex; gap: 0.6rem; align-items: baseline; justify-content: center; margin: 0 0 0.8rem; }
+.later-amount b { font-size: 1.5rem; }
+.later-amount span { color: var(--soft); font-size: 0.85rem; }
+.later-box { margin: 0 0 1.2rem; padding: 0.9rem 1rem; border: 1px solid #ecd9a2; border-radius: 14px; background: #fffaf0; }
+.later-list { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+.later-list li { padding: 0.7rem 0.8rem; border-radius: 10px; background: #fff; border: 1px solid var(--line-soft); }
+.later-list li[data-st="uncollected"] { border-color: #e9b7a8; }
+.ll-main { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
+.ll-main b { font-size: 1.1rem; }
+.ll-no { color: var(--soft); font-size: 0.85rem; }
+.ll-memo { font-size: 0.9rem; }
+.ll-sub { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.25rem 0 0.5rem; color: var(--soft); font-size: 0.82rem; }
+.ll-badge { padding: 0.05rem 0.5rem; border-radius: 999px; background: #eef3e8; color: #33582a; }
+.ll-badge.over { background: #fbe7e1; color: #8a2d16; }
+.ll-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.later-closed { margin-top: 0.7rem; font-size: 0.88rem; }
+.later-closed ul { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
+.later-closed li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; color: var(--soft); }
+.later-set .later-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
+/* the printed slip */
+.later-slip { font-size: 10pt; line-height: 1.5; }
+.later-slip .ls-store { margin: 0; text-align: center; font-weight: 700; }
+.later-slip .ls-title { margin: 0.2rem 0; text-align: center; font-size: 12pt; }
+.later-slip .ls-no { margin: 0 0 0.4rem; text-align: center; font-size: 8.5pt; }
+.later-slip .ls-items { width: 100%; border-collapse: collapse; }
+.later-slip .ls-items td:last-child { text-align: right; white-space: nowrap; }
+.later-slip .ls-total { display: flex; justify-content: space-between; margin: 0.4rem 0; padding-top: 0.3rem; border-top: 1px dashed #000; }
+.later-slip .ls-qr svg { display: block; width: 70%; height: auto; margin: 0.3rem auto; }
+.later-slip .ls-note { margin: 0; font-size: 8.5pt; }

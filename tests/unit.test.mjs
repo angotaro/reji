@@ -353,3 +353,27 @@ test('install help: installed, in-app browser, install prompt, iPhone/iPad, othe
   assert.equal(installStateFor({ isStandalone: false, inApp: false, hasPrompt: false, isIos: true }), 'ios');
   assert.equal(installStateFor({ isStandalone: false, inApp: false, hasPrompt: false, isIos: false }), 'other');
 });
+
+// ---- pay later (後払い): limits and matching ----
+import { laterCheck, matchLater } from '../assets/js/latercore.js';
+test('pay later: off unless turned on, a limit per sale and for everything still owed', () => {
+  const s = { payLater: true, laterMax: 3000, laterTotal: 20000 };
+  assert.deepEqual(laterCheck(1500, 0, s), { ok: true });
+  assert.equal(laterCheck(3001, 0, s).reason, 'perSale');
+  assert.equal(laterCheck(2000, 19000, s).reason, 'total');
+  assert.equal(laterCheck(100, 0, { ...s, payLater: false }).reason, 'off');
+});
+test('pay later: exact amounts (also an earlier link\'s) match; a plain amount only when one entry could be meant', () => {
+  const U = 10n ** 18n;
+  const keyOf = (tr) => `${tr.txHash}:${tr.logIndex}`;
+  const e = (id, yen, suffix, extra = {}) => ({ id, status: 'later', amountYen: yen, suffix, chains: [137], startBlocks: { 137: 100 }, ...extra });
+  const tr = (n, value, block = 200) => ({ chainId: 137, blockNumber: block, value, txHash: '0x' + n, logIndex: 0 });
+  const entries = [e('a', 1000, 11), e('b', 1000, 22, { oldSuffixes: [7] }), e('c', 500, 33)];
+  const hits = matchLater([tr('1', 1000n * U + 11n), tr('2', 1000n * U + 7n), tr('3', 500n * U)], entries, new Set(), keyOf);
+  assert.deepEqual(hits.map((h) => [h.id, h.match]), [['a', 'exact'], ['b', 'exact'], ['c', 'amount']]);
+  assert.equal(matchLater([tr('4', 1000n * U)], entries, new Set(), keyOf).length, 0, 'a plain ¥1,000 could be a or b');
+  assert.equal(matchLater([tr('5', 1000n * U + 11n, 50)], entries, new Set(), keyOf).length, 0, 'before the entry existed');
+  assert.equal(matchLater([tr('6', 500n * U + 33n)], entries, new Set(['0x6:0']), keyOf).length, 0, 'already booked');
+  assert.equal(matchLater([tr('7', 500n * U + 33n)], [e('c', 500, 33, { status: 'settled' })], new Set(), keyOf).length, 0, 'closed by the store');
+  assert.equal(matchLater([tr('8', 1000n * U + 11n), tr('9', 1000n * U + 11n, 201)], [entries[0]], new Set(), keyOf).length, 1, 'one transfer per entry');
+});

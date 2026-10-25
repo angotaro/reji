@@ -1,7 +1,7 @@
 // Customer pay page. Opened from the register's QR; all data comes from the URL
 // and is treated as untrusted. Payment goes wallet-to-wallet (JPYC.transfer).
 import { html, $, yen, fmtInt, shortAddr, copyText, toast, store, mmss, attr, b64urlDecode, inAppBrowser } from './util.js';
-import { t, getLang, setLang } from './i18n.js';
+import { t, getLang, setLang, fmtDateTime } from './i18n.js';
 import { CHAINS, JPYC, LIMITS, chainName, explorerTx } from './config.js';
 import { addressStatus, checksum, yenToWei, formatUnits, exactUnits, eip681, sameAddress, isTipValue } from './evm.js';
 import { rpc, tokenBalance, nativeBalance, txReceipt, scanTransfers, transfersInReceipt, Watcher, blockNumber } from './rpc.js';
@@ -81,7 +81,7 @@ function loadBrand() {
 }
 loadBrand();
 const expired = () => !!req?.exp && Date.now() > req.exp;
-const validText = () => (expired() ? t('pay.expiredShort') : mmss(req.exp - Date.now()));
+const validText = () => (expired() ? t('pay.expiredShort') : req.exp - Date.now() > 3_600_000 ? t('pay.validUntil', { date: fmtDateTime(req.exp) }) : mmss(req.exp - Date.now()));
 
 function errText(e) {
   const m = String(e?.data?.message || e?.shortMessage || e?.message || e || '');

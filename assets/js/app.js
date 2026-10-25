@@ -13,6 +13,7 @@ import { validLogo, applyBrandColor, hasBrand, publishBrand } from './brand.js';
 import { resumeCharge, trackConfirmations, chargeOpen, rerenderCharge } from './charge.js';
 import { gasWallet, refreshGasBalance, ownerState } from './gas.js';
 import { probe } from './rpc.js';
+import { startCollector } from './later.js';
 import { initInstall, keepData } from './install.js';
 
 initInstall();
@@ -21,6 +22,9 @@ const gasTick = () => { if (state.settings.gasless && gasWallet()) refreshGasBal
 
 const top = $('#top');
 const main = $('#main');
+const netBanner = Object.assign(document.createElement('div'), { className: 'net-banner', hidden: true });
+netBanner.setAttribute('role', 'status');
+top.after(netBanner);
 let view = '';
 let health = { state: 'start', label: '' };
 
@@ -126,6 +130,9 @@ async function checkHealth() {
       health = { state: 'bad', label: t('net.unreachable', { chain: chainName(id) }) };
     }
   }
+  // Offline: sales go on; payments are confirmed once the connection is back (and pay later can bridge the gap).
+  netBanner.hidden = health.state === 'ok';
+  if (!netBanner.hidden) netBanner.textContent = t(health.state === 'off' ? 'net.bannerOff' : 'net.bannerBad') + (state.settings.payLater ? (getLang() === 'ja' ? '' : ' ') + t('net.bannerLater') : '');
   const el = $('#net');
   if (el) {
     el.dataset.state = health.state;
@@ -151,9 +158,11 @@ on('charge-closed', () => { if (view === 'register') renderRegister(main); });
 on('external-change', () => { if (!chargeOpen() && view !== 'settings' && view !== 'setup') renderView(); });
 window.addEventListener('online', checkHealth);
 window.addEventListener('offline', checkHealth);
+setInterval(() => { if (!document.hidden) checkHealth(); }, 30_000);
 
 // ---- boot ----
 pruneUnpaid();
+if (state.settings.address) startCollector(); // pay-later payments are booked whenever the register is online
 if (state.pending && state.settings.address) history.replaceState(null, '', '#/');
 route().then(() => { if (state.settings.address) resumeCharge(); });
 checkHealth();

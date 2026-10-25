@@ -206,6 +206,14 @@ const registerSec = (s) => html`<section class="set-sec" id="sec-register">
     <input name="expiryMin" type="number" min="2" max="120" step="1" value="${s.expiryMin}" inputmode="numeric">
     <small class="hint">${t('set.expiryHint')}</small></label>
   <label class="check"><input type="checkbox" name="sound"${attr('checked', s.sound)}><span>${t('set.sound')}</span></label>
+  <fieldset class="field later-set"><legend class="label">${t('set.payLaterTitle')}</legend>
+    <label class="check"><input type="checkbox" name="payLater"${attr('checked', s.payLater)}><span>${t('set.payLater')}</span></label>
+    <small class="hint">${t('set.payLaterHint')}</small>
+    <div class="later-nums">
+      <label class="field"><span class="label">${t('set.laterMax')}</span><input name="laterMax" type="number" min="100" step="100" value="${s.laterMax}" inputmode="numeric"></label>
+      <label class="field"><span class="label">${t('set.laterTotal')}</span><input name="laterTotal" type="number" min="100" step="100" value="${s.laterTotal}" inputmode="numeric"></label>
+      <label class="field"><span class="label">${t('set.laterDays')}</span><input name="laterDays" type="number" min="1" max="30" step="1" value="${s.laterDays}" inputmode="numeric"></label>
+    </div></fieldset>
   <fieldset class="field"><legend class="label">${t('set.language')}</legend>
     <div class="seg">${radio('lang', 'ja', getLang(), '日本語')}${radio('lang', 'en', getLang(), 'English')}</div></fieldset>
 </section>`;
@@ -531,6 +539,10 @@ function readForm(form) {
   next.receiptWidth = get('receiptWidth') === '80' ? 80 : 58;
   next.expiryMin = clamp(parseInt(toHalfWidth(get('expiryMin')), 10) || 15, 2, 120);
   next.sound = fd.get('sound') === 'on';
+  next.payLater = fd.get('payLater') === 'on';
+  next.laterMax = clamp(parseInt(toHalfWidth(get('laterMax')), 10) || 3000, 100, 10_000_000);
+  next.laterTotal = clamp(parseInt(toHalfWidth(get('laterTotal')), 10) || 20000, next.laterMax, 100_000_000);
+  next.laterDays = clamp(parseInt(toHalfWidth(get('laterDays')), 10) || 7, 1, 30);
   if (form.querySelector('[name="gasless"]')) next.gasless = fd.get('gasless') === 'on';
   const lang = get('lang') === 'en' ? 'en' : 'ja';
   const products = readProducts(form, errors);

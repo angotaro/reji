@@ -14,7 +14,7 @@ CROPS = {
     '19-pay-nowallet': ('19-pay-nowallet', 1150), '18-receipt-itemized': ('18-receipt-itemized', 1300),
     '14-pay-brand': ('14-pay-ready', 1050), '18-receipt-brand': ('18-receipt-itemized', 1300),
     '20-sign-page': ('20-sign-page', 1687), '20-store-page': ('20-store-page', 1560), '22-pop': ('22-pop', 1173),
-    '21-receipt-addressee': ('21-receipt-addressee', 1500), '23-store-tip': ('23-store-tip', 1250), '24-tip-done': ('24-tip-done', 1480),
+    '21-receipt-addressee': ('21-receipt-addressee', 1500), '33-offline-banner': ('33-offline-banner', 300), '23-store-tip': ('23-store-tip', 1250), '24-tip-done': ('24-tip-done', 1480),
 }
 
 def main():

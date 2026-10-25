@@ -1,6 +1,7 @@
 // Charging: show the payment QR, watch every accepted chain, book the sale.
-import { html, raw, $, yen, shortAddr, shortHash, mmss, copyText, toast, randInt, uid, wakeLock, b64urlEncode, forQr } from './util.js';
-import { t } from './i18n.js';
+import { html, raw, $, yen, shortAddr, shortHash, mmss, copyText, toast, randInt, uid, wakeLock, b64urlEncode, forQr, store } from './util.js';
+import { t, fmtDateTime } from './i18n.js';
+import { checkLater, outstanding, toLater, laterDialog } from './later.js';
 import { CHAINS, LIMITS, chainName, explorerTx } from './config.js';
 import { yenToWei, eip681, formatUnits, isAddress, UNIT, isTipValue } from './evm.js';
 import { Watcher, blockNumber, scanTransfers, txReceipt, transfersInReceipt, rpc, confirmElsewhere } from './rpc.js';
@@ -265,6 +266,8 @@ function render() {
   const view = cur.phase === 'paid' ? paidHtml() : cur.phase === 'ended' ? endedHtml() : waitingHtml();
   ov.innerHTML = String(view);
   ov.classList.toggle('present', cur.present);
+  if (!cur.present) ov.classList.remove('flipped');
+  else requestAnimationFrame(fitPresentQr);
   if (cur.phase === 'paid') fillReceiptQr();
   else if (cur.phase !== 'ended') {
     updateListen();
@@ -326,11 +329,13 @@ function waitingHtml() {
         <div id="others"></div>
         <div class="charge-foot">
           <button type="button" class="btn danger-ghost" data-act="cancel">${t('charge.cancel')}</button>
+          ${s.payLater ? html`<button type="button" class="btn ghost" data-act="later">${t('later.button')}</button>` : ''}
           <button type="button" class="btn ${cur.phase === 'expired' ? 'primary' : 'ghost'}" data-act="extend" id="extend-btn">${t('charge.extend')}</button>
         </div>
       </div>
     </div>
     <button type="button" class="btn present-exit" data-act="present-exit">${icon('back')}<span>${t('charge.presentExit')}</span></button>
+    <button type="button" class="btn present-flip" data-act="flip" aria-pressed="${store.get(FLIP_KEY, false) === true}">${icon('flip')}<span>${t('charge.flip')}</span></button>
   </div>`;
 }
 
@@ -492,6 +497,34 @@ function endUnpaid(status) {
   render();
 }
 
+// ---- pay later (後払い): the goods go now, the payment comes when the customer has a connection ----
+async function payLater() {
+  const c = cur.c;
+  const s = state.settings;
+  const chk = checkLater(c.amountYen);
+  if (!chk.ok) {
+    toast(t(`later.no.${chk.reason}`, { max: yen(s.laterMax), left: yen(Math.max(0, s.laterTotal - outstanding())) }), 'error');
+    return;
+  }
+  const entry = toLater(c);
+  const memo = await laterDialog(entry);
+  if (memo === null || !cur || cur.c.id !== c.id || cur.phase === 'paid') return; // closed, or paid in the meantime
+  stopWatchers();
+  clearInterval(cur.tick);
+  state.unpaid = [{ ...entry, memo }, ...state.unpaid.filter((u) => u.id !== c.id)];
+  saveUnpaid();
+  if (state.pending?.id === c.id) {
+    state.pending = null;
+    savePending();
+  }
+  state.cart = [];
+  saveCart();
+  emit('unpaid');
+  emit('cart');
+  closeCharge();
+  toast(t('later.done', { date: fmtDateTime(entry.payBy) }));
+}
+
 export function closeCharge() {
   if (!cur) return;
   stopWatchers();
@@ -507,17 +540,31 @@ export function closeCharge() {
   emit('charge-closed');
 }
 
+// Shown to the customer. Staff who hold the phone upside down to show it can flip the view once; it is remembered.
+const FLIP_KEY = 'reji:presentFlip:v1';
+
+/** The whole QR must fit on screen without scrolling: size it to the height left under the amount. */
+function fitPresentQr() {
+  const ov = $('#overlay');
+  const f = ov?.querySelector('.qr-frame');
+  if (!cur?.present || !f) return;
+  let top = 0;
+  for (let el = f; el && el !== ov; el = el.offsetParent) top += el.offsetTop; // layout position (a flip does not change it)
+  ov.style.setProperty('--qr-fit', `${Math.max(200, ov.clientHeight - top - 16)}px`);
+}
 function enterPresent() {
   if (!cur) return;
   cur.present = true;
   $('#overlay').classList.add('present');
+  $('#overlay').classList.toggle('flipped', store.get(FLIP_KEY, false) === true);
+  requestAnimationFrame(fitPresentQr);
   try { document.documentElement.requestFullscreen?.()?.catch?.(() => {}); } catch { /* not supported */ }
 }
 
 function exitPresent() {
   if (!cur) return;
   cur.present = false;
-  $('#overlay')?.classList.remove('present');
+  $('#overlay')?.classList.remove('present', 'flipped');
   try { if (document.fullscreenElement) document.exitFullscreen?.()?.catch?.(() => {}); } catch { /* ignore */ }
 }
 
@@ -539,6 +586,7 @@ function bind() {
   document.addEventListener('keydown', (e) => {
     if (cur?.present && e.key === 'Escape') exitPresent();
   });
+  addEventListener('resize', () => requestAnimationFrame(fitPresentQr)); // rotating the tablet, the browser bar
   on('sale', (s) => {
     if (cur?.sale && cur.sale.id === s.id) {
       const el = $('#conf');
@@ -571,9 +619,19 @@ async function onClick(e) {
         await navigator.share({ title: t('charge.shareTitle', { store: c.storeName || 'Reji' }), text: t('charge.shareText', { amount: yen(c.amountYen) }), url: payUrl(c, c.chainId) });
       } catch { /* dismissed */ }
       break;
+    case 'later':
+      payLater();
+      break;
     case 'present':
       enterPresent();
       break;
+    case 'flip': {
+      const on = !$('#overlay').classList.contains('flipped');
+      $('#overlay').classList.toggle('flipped', on);
+      store.set(FLIP_KEY, on);
+      e.target.closest('[data-act="flip"]')?.setAttribute('aria-pressed', String(on));
+      break;
+    }
     case 'present-exit':
       exitPresent();
       break;

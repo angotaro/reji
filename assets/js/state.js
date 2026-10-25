@@ -41,6 +41,10 @@ export const DEFAULT_SETTINGS = {
   tipAtt: null, // the receiving wallet's signature agreeing to that, bound to the profile key
   terminal: '', // optional receipt-number prefix when running several registers
   expiryMin: 15,
+  payLater: false, // 後払い: hand over now, pay later (outages, emergencies)
+  laterMax: 3000, // per sale, yen
+  laterTotal: 20000, // all open pay-later sales together, yen
+  laterDays: 7, // how long a pay-later link stays valid
   qrKind: 'web', // kept for older backups: the register shows one QR for everyone
   receiptWidth: 58,
   sound: true,
@@ -62,6 +66,10 @@ export function normalizeSettings(s) {
   o.network = o.network === 'testnet' ? 'testnet' : 'mainnet';
   o.taxMode = o.taxMode === 'excl' ? 'excl' : 'incl';
   o.expiryMin = clamp(parseInt(o.expiryMin, 10) || 15, 2, 120);
+  o.payLater = o.payLater === true;
+  o.laterMax = clamp(parseInt(o.laterMax, 10) || 3000, 100, 10_000_000);
+  o.laterTotal = clamp(parseInt(o.laterTotal, 10) || 20000, o.laterMax, 100_000_000);
+  o.laterDays = clamp(parseInt(o.laterDays, 10) || 7, 1, 30);
   o.qrKind = 'web';
   o.receiptWidth = Number(o.receiptWidth) === 80 ? 80 : 58;
   o.keypadTax = [10, 8, 0].includes(Number(o.keypadTax)) ? Number(o.keypadTax) : 10;
@@ -173,9 +181,13 @@ export function consumedKeys() {
 
 export const UNPAID_KEEP_MS = 7 * 24 * 3600 * 1000;
 export function pruneUnpaid() {
-  const cutoff = Date.now() - UNPAID_KEEP_MS;
+  const now = Date.now();
   const before = state.unpaid.length;
-  state.unpaid = state.unpaid.filter((u) => (u.endedAt || u.createdAt) > cutoff);
+  state.unpaid = state.unpaid.filter((u) => {
+    if (['later', 'uncollected'].includes(u.status)) return true; // still owed: never dropped
+    if (['settled', 'writtenoff'].includes(u.status)) return (u.closedAt || 0) > now - 30 * 86_400_000;
+    return (u.endedAt || u.createdAt) > now - UNPAID_KEEP_MS;
+  });
   if (state.unpaid.length !== before) saveUnpaid();
 }
 

@@ -14,6 +14,7 @@ JPYCで受け取れる、お店のための無料のレジ（Webアプリ）で�
 - **電子レシートと領収書**：インボイス（適格簡易請求書）の記載に対応。宛名・但し書きは、お客様が自分のスマホで入れます
 - **お店のページ**：紹介・SNS・お品書き・出店情報をまとめたページ、はがきサイズの店頭POP、ファンからの応援（投げ銭・任意）
 - **端末まわり**：バックアップと引き継ぎ（2台目のレジにも）、ホーム画面に追加してアプリのように使える（PWA）、電波がなくても画面は開きます（支払いには接続が必要です）
+- **非常時・オフライン**：インターネットにつながらないときも、お会計の画面は使えます。その場で入金を確かめられないときは「あとで払ってもらう」（後払い）で、商品を先にお渡しして、お客様にはつながったときに払ってもらえます（上限つき。入金はレジが自動で確かめて売上にします）
 - **対応チェーン**：Polygon・Avalanche・Ethereum・Kaia（それぞれテストネットあり）
 
 ## 使い方
@@ -61,9 +62,9 @@ GitHubとCloudflare Workersを使って、無料で公開できます。くわ�
 
 ```sh
 python3 -m http.server 8080        # プロジェクトのフォルダで
-node --test                        # ユニットテスト（59）
+node --test                        # ユニットテスト（61）
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # E2Eテスト（156項目。スクリーンショットは tests/shots/）
+node tests/e2e.mjs                 # E2Eテスト（174項目。スクリーンショットは tests/shots/）
 node tests/devices.mjs             # スマホ・タブレット13機種 × 11画面
 node tests/offline-workers.mjs     # Workers の .html 転送のもとでのオフライン起動
 python3 manual/images.py           # スタッフマニュアルの画像を作る（tests/shots/ から）
