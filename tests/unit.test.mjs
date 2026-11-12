@@ -377,3 +377,31 @@ test('pay later: exact amounts (also an earlier link\'s) match; a plain amount o
   assert.equal(matchLater([tr('7', 500n * U + 33n)], [e('c', 500, 33, { status: 'settled' })], new Set(), keyOf).length, 0, 'closed by the store');
   assert.equal(matchLater([tr('8', 1000n * U + 11n), tr('9', 1000n * U + 11n, 201)], [entries[0]], new Set(), keyOf).length, 1, 'one transfer per entry');
 });
+
+// ---- 恩送り (pay it forward): its own mark, and a listing that needs the wallet's signature ----
+import { okuriActive } from '../assets/js/brand.js';
+import { isOkuriValue } from '../assets/js/evm.js';
+test('恩送り: its own on-chain mark, never a sale, distinct from a tip', () => {
+  const U = 10n ** 18n;
+  assert.equal(isOkuriValue(500n * U + BigInt(LIMITS.okuriMark)), true);
+  assert.equal(isOkuriValue(500n * U + BigInt(LIMITS.tipMark)), false);
+  assert.equal(isTipValue(500n * U + BigInt(LIMITS.okuriMark)), true, 'the register treats it as a gift, not a sale');
+  assert.ok(LIMITS.okuriMark > LIMITS.suffixMax && LIMITS.okuriMark !== LIMITS.tipMark);
+});
+test('恩送り: a listing counts only with the wallet\'s signed tip offer, and only until it ends', async () => {
+  const d = privateKeyFromHex('0x' + '5a'.repeat(32));
+  const to = checksum(addressOf(d));
+  const pub = 'ab'.repeat(32);
+  const msg = ownerMessage('accept-tips', to, tipCode(pub), '喫茶たまご');
+  const tip = { to, msg, sig: signatureHex(await sign(personalMessageDigest(msg), d)), chains: [137] };
+  const now = Date.now();
+  const okuri = { cat: 'disaster', msg: '台風で休業中です', area: 'みどり市', since: now - 1000, until: now + 7 * 86_400_000, proofs: [{ c: 137, tx: '0x' + 'a'.repeat(64) }, { c: 5, tx: 'nope' }] };
+  const b = parseBrand({ name: '喫茶たまご', tip, okuri }, pub);
+  assert.equal(okuriActive(b), true);
+  assert.deepEqual([b.okuri.cat, b.okuri.area, b.okuri.proofs.length], ['disaster', 'みどり市', 1]);
+  assert.equal(okuriActive(b, now + 8 * 86_400_000), false, 'after the end date');
+  assert.equal(parseBrand({ name: 'x', okuri }, pub).okuri, null, 'no signed tip offer: no listing');
+  assert.equal(parseBrand({ name: 'x', tip, okuri }, 'cd'.repeat(32)).okuri, null, 'someone else\'s profile cannot borrow it');
+  assert.equal(parseBrand({ name: 'x', tip, okuri: { ...okuri, until: now + 90 * 86_400_000 } }, pub).okuri, null, 'longer than a month is refused');
+  assert.equal(parseBrand({ name: 'x', tip, okuri: { ...okuri, cat: 'prize' } }, pub).okuri.cat, 'other');
+});

@@ -165,3 +165,10 @@ body.lp { background: var(--paper); color: var(--ink); overflow-x: hidden; }
 
 /* the phone mockup peeks out of the tablet frame on purpose: never let it widen the page */
 .lp-hero { overflow-x: clip; }
+
+/* ---- 恩送り: the built-in reason to choose Reji ---- */
+.lp-okuri { padding: 3.2rem 0; background: linear-gradient(180deg, #fbf6ea, #f6efe0); border-block: 1px solid #ecdfc4; }
+.lp-okuri-lead { max-width: 46rem; margin: 0 0 1.4rem; font-size: 1.05rem; line-height: 1.95; }
+.lp-okuri-points { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+.lp-okuri-points li { padding: 1rem 1.1rem; border-radius: 14px; background: #fff; border: 1px solid #ecdfc4; line-height: 1.8; }
+.lp-okuri-points b { display: block; margin-bottom: 0.25rem; }

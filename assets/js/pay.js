@@ -8,7 +8,7 @@ import { rpc, tokenBalance, nativeBalance, txReceipt, scanTransfers, transfersIn
 import { discoverWallets, connect, ensureChain, sendTransfer, watchAsset, walletDeepLinks, isUserRejection, nativeSymbol, pageLinkForWallet, watchDeepLinks, walletRpcFailed, repairChain } from './wallet.js';
 import { receiptUrl, sanitizeReceipt } from './receipt.js';
 import { icon, stampSvg } from './ui.js';
-import { applyBrandColor, cachedBrand, fetchBrand, eventLine, storePageUrl } from './brand.js';
+import { applyBrandColor, cachedBrand, fetchBrand, eventLine, storePageUrl, okuriActive } from './brand.js';
 import { storeCard } from './storecard.js';
 
 const RKEY = 'reji:receipts:v1';
@@ -17,11 +17,12 @@ const app = $('#pay');
 
 function parse() {
   const q = new URLSearchParams(location.search);
-  const tip = q.get('tip') === '1'; // a supporter's tip (応援) from a store page, not a sale
+  const okuri = q.get('tip') === '2'; // 恩送り: a gift to a store that lists itself, with its own on-chain mark
+  const tip = okuri || q.get('tip') === '1'; // a supporter's tip (応援) from a store page, not a sale
   const to = q.get('to') || '';
   const chainId = Number(q.get('c'));
   const amountYen = Number(q.get('a'));
-  const suffix = tip ? LIMITS.tipMark : q.get('u') == null ? 0 : Number(q.get('u'));
+  const suffix = okuri ? LIMITS.okuriMark : tip ? LIMITS.tipMark : q.get('u') == null ? 0 : Number(q.get('u'));
   const exp = !tip && q.get('e') ? Number(q.get('e')) : 0;
   if (addressStatus(to) !== 'ok' || !CHAINS[chainId]) return null;
   if (!Number.isInteger(amountYen) || amountYen < (tip ? LIMITS.tipMin : 1) || amountYen > (tip ? LIMITS.tipMax : LIMITS.maxYen)) return null;
@@ -31,6 +32,7 @@ function parse() {
   const hex43 = (k) => (/^[A-Za-z0-9_-]{43}$/.test(q.get(k) || '') ? Array.from(b64urlDecode(q.get(k)), (x) => x.toString(16).padStart(2, '0')).join('') : '');
   return {
     tip,
+    okuri,
     to: checksum(to),
     chainId,
     amountYen,
@@ -59,7 +61,9 @@ if (S.brand && !req.tip && !addrOk(S.brand)) S.brand = null; // a stale copy dec
 if (req) applyBrandColor(document.documentElement, req.brandColor || S.brand?.color || '');
 // A tip link is trusted only when the store's own signed profile agrees on where tips go
 // (the wallet signed it); a crafted link with another address is refused.
-const tipOk = (b) => !!b?.tip && sameAddress(b.tip.to, req.to) && b.tip.chains.includes(req.chainId);
+const tipOk = (b) => !!b?.tip && sameAddress(b.tip.to, req.to) && b.tip.chains.includes(req.chainId) && (!req.okuri || okuriActive(b)); // 恩送り only while the store lists itself
+/** The wording for a gift: 恩送り has its own. */
+const tk = (key, vars) => t(req?.okuri ? key.replace(/\.tip/, '.okuri') : key, vars);
 if (req?.tip) S.tipCheck = !req.brandPub ? 'bad' : tipOk(S.brand) ? 'ok' : 'checking';
 function loadBrand() {
   if (!req?.brandPub) return;
@@ -91,7 +95,7 @@ function errText(e) {
 
 // ---------- render ----------
 function render() {
-  document.title = !req ? t('pay.titleGeneric') : req.tip ? t('pay.tipTitle', { store: req.store || t('pay.theStore') }) : `${yen(req.amountYen)} ${req.store || t('pay.titleGeneric')}`;
+  document.title = !req ? t('pay.titleGeneric') : req.tip ? tk('pay.tipTitle', { store: req.store || t('pay.theStore') }) : `${yen(req.amountYen)} ${req.store || t('pay.titleGeneric')}`;
   const test = req && CHAINS[req.chainId].testnet;
   app.innerHTML = String(html`<header class="noren pay-top">
       <span class="pay-store">${S.brand?.logo ? html`<img class="store-logo${S.logoShown ? ' shown' : ''}" src="${S.brand.logo}" alt="">` : ''}<span class="brand-name">${req?.store || t('pay.titleGeneric')}</span></span>
@@ -102,7 +106,7 @@ function render() {
       ${req ? billHtml() : ''}
       <section class="pay-panel" aria-live="polite">${panelHtml()}</section>
     </main>
-    <footer class="pay-foot"><p>${t(req?.tip ? 'pay.tipFooter' : 'pay.footer')}</p><p><a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
+    <footer class="pay-foot"><p>${req?.tip ? tk('pay.tipFooter') : t('pay.footer')}</p><p><a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
   if (S.brand?.logo) S.logoShown = true;
   if (S.phase === 'ready' && !S.wallets.length) watchManual();
 }
@@ -110,7 +114,7 @@ function render() {
 function billHtml() {
   const done = S.phase === 'done';
   return html`<div class="bill${done ? ' is-paid' : ''}">
-    <p class="bill-label">${t(req.tip ? 'pay.tipLabel' : 'pay.billLabel')}</p>
+    <p class="bill-label">${req.tip ? tk('pay.tipLabel') : t('pay.billLabel')}</p>
     <p class="bill-amount">${yen(req.amountYen)}</p>
     <p class="bill-sub">${t('pay.inJpyc', { amount: fmtInt(req.amountYen) })}</p>
     ${req.desc ? html`<p class="bill-desc">${req.desc}</p>` : ''}
@@ -121,7 +125,7 @@ function billHtml() {
       <div><dt>${t(req.tip ? 'pay.tipTo' : 'pay.to')}</dt><dd title="${req.to}">${shortAddr(req.to)}</dd></div>
       ${req.exp && !['done', 'confirming', 'slow', 'relaying', 'waitexpire', 'signing'].includes(S.phase) ? html`<div><dt>${t('pay.validFor')}</dt><dd id="valid">${validText()}</dd></div>` : ''}
     </dl>
-    ${done ? html`<div class="bill-stamp stamp">${stampSvg(S.paidAt, req.tip ? { label: t('pay.tipStampLabel'), bottom: t('pay.tipStamp') } : {})}</div>` : ''}
+    ${done ? html`<div class="bill-stamp stamp">${stampSvg(S.paidAt, req.tip ? { label: tk('pay.tipStampLabel'), bottom: tk('pay.tipStamp') } : {})}</div>` : ''}
   </div>`;
 }
 
@@ -262,7 +266,7 @@ function panelHtml() {
           <p class="rpc-url"><code class="mono">${CHAINS[req.chainId].rpc[0]}</code><button type="button" class="btn quiet small" data-act="copy-rpc">${icon('copy')}<span>${t('common.copy')}</span></button></p>
           <p class="fine wallet-rpc-detail">${t('pay.walletRpcDetail', { msg: S.walletRpc })}</p>
         </div>` : ''}
-        <button type="button" class="btn primary big pay-btn" data-act="send"${attr('disabled', low)}>${req.tip ? t('pay.tipSend', { amount: yen(req.amountYen) }) : free ? t('pay.payFree', { amount: yen(req.amountYen) }) : t('pay.payAmount', { amount: yen(req.amountYen) })}</button>
+        <button type="button" class="btn primary big pay-btn" data-act="send"${attr('disabled', low)}>${req.tip ? tk('pay.tipSend', { amount: yen(req.amountYen) }) : free ? t('pay.payFree', { amount: yen(req.amountYen) }) : t('pay.payAmount', { amount: yen(req.amountYen) })}</button>
         <p class="fine">${free ? t('pay.freeNote') : t('pay.gasNote', { sym })}</p>
         <button type="button" class="btn quiet" data-act="back">${t('pay.otherWallet')}</button>`;
     }
@@ -288,8 +292,8 @@ function panelHtml() {
         <button type="button" class="btn primary" data-act="retry">${t('pay.tryAgain')}</button>`;
     case 'done':
       if (req.tip) {
-        return html`<h2 class="panel-title done-title">${icon('check')}<span>${t('pay.tipDoneTitle')}</span></h2>
-        <p class="panel-text">${t('pay.tipDoneText', { store: req.store || t('pay.theStore'), amount: yen(req.amountYen) })}</p>
+        return html`<h2 class="panel-title done-title">${icon('check')}<span>${tk('pay.tipDoneTitle')}</span></h2>
+        <p class="panel-text">${tk('pay.tipDoneText', { store: req.store || t('pay.theStore'), amount: yen(req.amountYen) })}</p>
         ${S.brand?.msg ? html`<p class="store-msg">${S.brand.msg}</p>` : ''}
         ${req.brandPub ? html`<a class="btn primary big" href="${storePageUrl(req.brandPub)}">${icon('store')}<span>${t('pay.tipBack')}</span></a>` : ''}
         <div class="btn-row">
@@ -584,7 +588,7 @@ async function finish() {
   if (req.tip) { // no 領収書 for a gift: keep a small record on this phone instead
     const list = store.get(TKEY, []);
     const prev = Array.isArray(list) ? list.filter((x) => x && x.tx !== S.tx) : [];
-    store.set(TKEY, [{ tx: S.tx, t: S.paidAt, b: req.brandPub, s: req.store, a: req.amountYen, c: req.chainId }, ...prev].slice(0, 200));
+    store.set(TKEY, [{ tx: S.tx, t: S.paidAt, b: req.brandPub, s: req.store, a: req.amountYen, c: req.chainId, ...(req.okuri ? { k: 'okuri' } : {}) }, ...prev].slice(0, 200));
     S.phase = 'done';
     S.pool?.close();
     render();

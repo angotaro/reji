@@ -156,3 +156,13 @@ html, body { overflow-x: clip; }
 .rpc-url code { font-size: 0.8rem; word-break: break-all; }
 .wallet-rpc-detail { color: var(--ink-soft); word-break: break-all; }
 .hp-card .panel-title { text-wrap: balance; word-break: auto-phrase; }
+
+/* ---- 恩送り ---- */
+.okuri-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0 0 0.5rem; font-size: 0.84rem; }
+.okuri-cat { padding: 0.1rem 0.6rem; border-radius: 999px; background: #eef3e8; color: #33582a; font-weight: 700; }
+.okuri-cat[data-cat="disaster"] { background: #fbe7e1; color: #8a2d16; }
+.okuri-area, .okuri-until { color: var(--ink-soft, #5a6480); }
+.okuri-msg { margin: 0 0 0.6rem; line-height: 1.75; }
+.sp-okuri { border-color: #ecdfc4; background: #fffaf0; }
+.okuri-info { margin-bottom: 0.8rem; padding-bottom: 0.8rem; border-bottom: 1px dashed #e3d4b3; }
+.okuri-facts { margin: 0.3rem 0 0.5rem; }

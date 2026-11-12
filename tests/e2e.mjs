@@ -876,6 +876,65 @@ try {
   ok('settings: turning pay later on and changing the days is saved', saved.payLater === true && saved.laterDays === 3);
   await lsctx.close();
 
+  // ---- 恩送り (pay it forward): a store lists itself, supporters send directly, nobody in between ----
+  const salesBeforeOkuri = await page.evaluate(() => JSON.parse(localStorage.getItem('reji:sales:v1')).length);
+  await page.goto(`${BASE}app.html#/settings?s=info`);
+  await page.reload();
+  await page.waitForSelector('#sec-info [data-act="okuri-on"]');
+  await page.click('#sec-info [data-act="okuri-on"]');
+  await page.waitForSelector('.modal [name="omsg"]');
+  await page.check('.modal [name="ocat"][value="disaster"]');
+  await page.fill('.modal [name="oarea"]', 'みどり市');
+  await page.fill('.modal [name="omsg"]', '台風で屋根がこわれ、しばらくお店を閉めています。');
+  await page.selectOption('.modal [name="odays"]', '7');
+  await page.screenshot({ path: `${OUT}/40-okuri-dialog.png` });
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('#sec-info .okuri-set .tip-state');
+  const okuriSet = (await settingsOf(page)).okuri;
+  ok('恩送り: the store lists itself for a set time, with a few of its own sales as checkable examples', okuriSet?.on === true && okuriSet.cat === 'disaster'
+    && okuriSet.until - okuriSet.since === 7 * 86_400_000 && okuriSet.proofs.length >= 1 && okuriSet.proofs.length <= 5,
+    JSON.stringify(okuriSet) + ' sales=' + (await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('reji:sales:v1')).map((x) => [x.testnet, x.chainId, !!x.txHash])))) + ' net=' + (await settingsOf(page)).network);
+  const board = await cust.newPage();
+  watch(board, 'okuri board', errors);
+  await board.goto(`${BASE}okuri.html?test=1`);
+  await board.waitForFunction(() => document.querySelector('#board')?.dataset.count === '1', null, { timeout: 15000 });
+  const cardText = await board.locator('.ok-card').textContent();
+  ok('恩送り board: found on the relays with no server, shown with its kind, area and message', cardText.includes('喫茶たまご') && cardText.includes('災害') && cardText.includes('みどり市') && cardText.includes('屋根'));
+  await board.screenshot({ path: `${OUT}/41-okuri-board.png`, fullPage: true });
+  await board.click('.ok-card a.btn');
+  await board.waitForSelector('details.sp-okuri[open]');
+  ok('恩送り: the store page checks the store\'s real sales on the blockchain', await seen(board, '.okuri-facts li.ok', 15000)
+    && /Reji/.test(await board.locator('.okuri-facts li.ok').first().textContent()));
+  ok('恩送り: the page says plainly that Reji checked nothing and the supporter decides', (await board.locator('.okuri-info .fine').textContent()).includes('ご自身で'));
+  await board.click('.tip-amt[data-a="500"]');
+  await board.waitForTimeout(400);
+  await board.screenshot({ path: `${OUT}/42-okuri-store.png`, fullPage: true });
+  const okuriTx = '0x' + '39'.repeat(32);
+  addTransfer({ from: CUSTOMER, value: 500n * UNIT + BigInt(LIMITS.okuriMark), tx: okuriTx });
+  await board.addInitScript((tx) => { window.__txHash = tx; }, okuriTx);
+  await board.click('[data-act="tip-go"]');
+  await board.waitForSelector('.wallet-btn');
+  ok('恩送り page: its own wording, and it goes only to the listed store', new URL(board.url()).searchParams.get('tip') === '2' && (await board.locator('.bill-label').textContent()).includes('恩送り'));
+  await board.tap('.wallet-btn');
+  await board.waitForSelector('.pay-btn:not([disabled])');
+  await board.tap('.pay-btn');
+  ok('恩送り: arrives, with its own stamp', await seen(board, '.done-title', 20000) && (await board.locator('.done-title').textContent()).includes('恩送り'));
+  const okuriSent = await board.evaluate(() => window.__sent);
+  ok('恩送り: sent straight to the store\'s wallet with the 恩送り mark', okuriSent && BigInt('0x' + okuriSent.data.slice(74)) === 500n * UNIT + BigInt(LIMITS.okuriMark)
+    && okuriSent.data.slice(34, 74).toLowerCase() === MERCHANT.slice(2).toLowerCase());
+  await board.goto(`${BASE}okuri.html`);
+  await board.waitForFunction(() => document.querySelector('#board')?.dataset.count === '0', null, { timeout: 15000 });
+  ok('恩送り board: test-mode stores never appear on the real board', (await board.locator('.ok-empty').count()) === 1);
+  await sleep(1500);
+  ok('恩送り: the register does not take it for a sale', (await page.evaluate(() => JSON.parse(localStorage.getItem('reji:sales:v1')).length)) === salesBeforeOkuri);
+  await page.click('#sec-info [data-act="okuri-off"]');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('#sec-info [data-act="okuri-on"]');
+  await board.goto(`${BASE}okuri.html?test=1`);
+  await board.waitForFunction(() => ['0', '1'].includes(document.querySelector('#board')?.dataset.count), null, { timeout: 15000 });
+  ok('恩送り: stopping takes the store off the board, and tips stay on', (await board.locator('.ok-card').count()) === 0 && (await settingsOf(page)).tips === true && (await settingsOf(page)).okuri == null);
+  await board.close();
+
   // ---- moving the store to another device (お店の引き継ぎ) ----
   await page.evaluate(() => localStorage.setItem('reji:lang', 'ja')); // the guide page is in Japanese
   await page.goto(`${BASE}app.html#/settings?s=data`);

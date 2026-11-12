@@ -51,3 +51,20 @@ body.legal { margin: 0; background: var(--mist); color: var(--ink); font-family:
 .idea-index { columns: 2 16rem; column-gap: 2rem; margin: 0.6rem 0 1.4rem; }
 .idea-index li { break-inside: avoid; margin: 0.15rem 0; }
 .idea { scroll-margin-top: 1rem; }
+
+/* ---- 恩送り ---- */
+.okuri-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0 0 0.5rem; font-size: 0.84rem; }
+.okuri-cat { padding: 0.1rem 0.6rem; border-radius: 999px; background: #eef3e8; color: #33582a; font-weight: 700; }
+.okuri-cat[data-cat="disaster"] { background: #fbe7e1; color: #8a2d16; }
+.okuri-area, .okuri-until { color: var(--ink-soft, #5a6480); }
+.okuri-msg { margin: 0 0 0.6rem; line-height: 1.75; }
+.lg-main .ok-list { list-style: none; margin: 0.8rem 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.9rem; }
+.ok-card { display: flex; flex-direction: column; gap: 0.2rem; padding: 1rem; border: 1px solid var(--line-soft); border-radius: 14px; background: #fff; }
+.ok-card[data-cat="disaster"] { border-color: #e9b7a8; }
+.ok-head { display: flex; gap: 0.7rem; align-items: center; margin-bottom: 0.5rem; }
+.ok-logo { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: none; }
+.ok-nologo { background: var(--ai-wash, #e7eaf3); }
+.ok-name { margin: 0; font-weight: 700; }
+.ok-tagline { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
+.ok-card .btn { margin-top: auto; align-self: flex-start; }
+.ok-empty { padding: 1.2rem; border: 1px dashed var(--line-soft); border-radius: 14px; text-align: center; line-height: 1.8; }

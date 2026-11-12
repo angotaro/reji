@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS = {
   eventSpace: '', // booth / space number at that event
   tips: false, // accept tips (応援) on the store page
   showMenu: true, // put the menu (names, prices) on the store page
+  okuri: null, // 恩送り listing: { on, cat, msg, area, since, until, proofs }
   tipAtt: null, // the receiving wallet's signature agreeing to that, bound to the profile key
   terminal: '', // optional receipt-number prefix when running several registers
   expiryMin: 15,
@@ -107,6 +108,11 @@ export function normalizeSettings(s) {
   o.tipAtt = a && typeof a === 'object' && /^0x[0-9a-fA-F]{40}$/.test(a.wallet || '') && /^[0-9a-f]{32}$/.test(a.code || '') && typeof a.message === 'string' && a.message.length <= 600
     && /^0x[0-9a-fA-F]{130}$/.test(a.signature || '') ? { wallet: a.wallet, code: a.code, message: a.message, signature: a.signature, at: Number(a.at) || 0 } : null;
   o.tips = !!o.tips && !!o.tipAtt;
+  const k = o.okuri;
+  o.okuri = o.tips && k && typeof k === 'object' && k.on === true && Number.isFinite(Number(k.until)) && Number.isFinite(Number(k.since))
+    ? { on: true, cat: k.cat === 'disaster' ? 'disaster' : 'other', msg: String(k.msg || '').slice(0, 80), area: String(k.area || '').slice(0, 20),
+      since: Number(k.since), until: Number(k.until), proofs: (Array.isArray(k.proofs) ? k.proofs : []).slice(0, 5) }
+    : null;
   o.showMenu = o.showMenu !== false;
   o.links = mergeLinks(o.storeLink, o.links);
   o.storeLink = o.links[0] || '';

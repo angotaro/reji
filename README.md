@@ -109,6 +109,18 @@ For when a payment can't be confirmed on the spot, a store can turn on **pay lat
 
 Pay later is trust-based (the goods go before the payment), so it is opt-in and capped; the rules are in `assets/js/latercore.js`.
 
+### Pay it forward (恩送り): stores helping one another
+
+Reji takes money from no one. People who want to say thanks can instead send JPYC straight to a store that uses Reji and needs a hand. Nobody holds the money in between, and nobody approves, picks or ranks anything.
+
+- **Listing:** a store that already accepts tips (which needs its receiving wallet's signature) can list itself for 7, 14 or 30 days, with a kind (disaster or hardship), an area and a short message. The listing lives inside the store's signed profile and adds one public tag to that relay event.
+- **The board (`okuri.html`):** asks the relays for every profile with the tag, checks each one in the browser (the profile key, and the wallet's signature bound to that profile) and hides ended listings. There is no server and no list to maintain. Test-mode stores use a separate tag.
+- **Facts, not judgement:** a listing carries a few of the store's past sale transactions; the store page looks each one up and shows how many are real Reji sales to that address, over what dates. A visitor can also count 恩送り received in the last 7 days.
+- **Its own mark:** 恩送り adds 3,939,393 wei (tips add 8,888,888), so it is never taken for a sale and can be counted on-chain.
+- **Never promoted:** nothing appears in the register, payment or receipt screens.
+
+Reji cannot verify need, and says so on every listing. The rules are in `okuriOffer`, `parseBrand` and `fetchOkuriBoard` (`assets/js/brand.js`).
+
 ### Choosing the site address
 
 Wallet phishing filters (MetaMask and others) block addresses that look like a crypto brand: `reji.jpyc.workers.dev` gets a full-screen "this site may be harmful" warning before the page even opens. Use a neutral project name (for example `reji-pos.pages.dev`) or your own domain. `tools/build.mjs` warns in the build log, and Settings → このお店の情報 shows a warning, if the address contains words such as jpyc, metamask, hashport, wallet or airdrop. Moving to a new address doesn't carry a store's data across (it lives in the browser, per address): back up on the old address and restore on the new one.
@@ -166,9 +178,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (61)
+node --test                        # unit tests (63)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (174 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (184 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 python3 manual/images.py           # staff manual images from tests/shots/

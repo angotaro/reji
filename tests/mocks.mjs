@@ -188,7 +188,8 @@ export function walletInit({ key, name, rdns, account }) {
 }
 
 export function watch(page, name, errors) {
-  page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
+  // A reload that interrupts a page-transition animation makes newer Chromium report it; the page is fine.
+  page.on('pageerror', (e) => { if (!/Transition was aborted/.test(e.message)) errors.push(`${name}: ${e.message}`); });
   page.on('console', (m) => {
     if (m.type() === 'error' && !/fonts\.g|ERR_FAILED|Failed to load resource/.test(m.text())) errors.push(`${name}: ${m.text()}`);
   });

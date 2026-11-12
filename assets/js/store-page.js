@@ -3,10 +3,11 @@
 // lists this phone's own receipts from the store.
 import { html, $, b64urlDecode, b64urlEncode, copyText, toast, store, yen, attr } from './util.js';
 import { TIP_PRESETS, LIMITS, CHAINS, chainName } from './config.js';
-import { sameAddress } from './evm.js';
-import { t, getLang, setLang, fmtDateTime } from './i18n.js';
+import { sameAddress, isOkuriValue, isTipValue, UNIT } from './evm.js';
+import { t, getLang, setLang, fmtDateTime, fmtDay } from './i18n.js';
 import { icon } from './ui.js';
-import { cachedBrand, fetchBrand, applyBrandColor } from './brand.js';
+import { cachedBrand, fetchBrand, applyBrandColor, okuriActive } from './brand.js';
+import { txReceipt, transfersInReceipt, rpc, blockNumber, scanTransfers } from './rpc.js';
 import { storeCard } from './storecard.js';
 import { sanitizeReceipt, receiptUrl } from './receipt.js';
 
@@ -25,6 +26,7 @@ let mine = [];
 let tipYen = 0;
 let tipChain = 0;
 let tipOpen = false;
+let okuriSeen = false;
 let logoShown = false; // the logo fades in once
 let menuOpen = false;
 
@@ -50,6 +52,63 @@ const myTips = () => { const l = store.get(TKEY, []); return (Array.isArray(l) ?
 const okTip = (n) => Number.isInteger(n) && n >= LIMITS.tipMin && n <= LIMITS.tipMax;
 
 /** 応援: collapsed and near the bottom, only when the receiving wallet itself agreed (checked here). */
+// ---- 恩送り: facts anyone can check on the blockchain, for the supporter to weigh. Reji judges nothing. ----
+let facts = null; // { n, payers, first, last } from the store's own example sales, or { n: 0 }
+let factsFor = '';
+let tally = null; // { n, sum } of 恩送り in the last days, counted on request
+async function okuriFacts() {
+  const k = profile?.okuri;
+  const to = profile?.tip?.to;
+  const key = `${pub}:${k?.since}`;
+  if (!k || !to || factsFor === key) return;
+  factsFor = key;
+  const seen = [];
+  for (const pr of k.proofs) {
+    try {
+      const rc = await txReceipt(pr.c, pr.tx);
+      const tr = transfersInReceipt(rc, to).find((x) => !isTipValue(x.value) && x.value % UNIT <= BigInt(LIMITS.suffixMax) && x.value >= UNIT);
+      if (!tr) continue;
+      const b = await rpc(pr.c, 'eth_getBlockByNumber', ['0x' + BigInt(rc.blockNumber).toString(16), false]);
+      seen.push({ from: String(tr.from).toLowerCase(), at: Number(BigInt(b.timestamp)) * 1000 });
+    } catch { /* a node did not answer: that example is simply not counted */ }
+  }
+  facts = seen.length ? { n: seen.length, payers: new Set(seen.map((x) => x.from)).size, first: Math.min(...seen.map((x) => x.at)), last: Math.max(...seen.map((x) => x.at)) } : { n: 0 };
+  render();
+}
+async function countOkuri(btn) {
+  const to = profile?.tip?.to;
+  if (!to) return;
+  btn.disabled = true;
+  btn.textContent = t('sp.okuriCounting');
+  try {
+    const ch = CHAINS[tipChain];
+    const latest = await blockNumber(tipChain);
+    const from = Math.max(0, latest - Math.ceil((7 * 86400) / ch.blockTime));
+    const found = await scanTransfers(tipChain, to, from, latest, { chunk: 2000, maxChunks: 400 });
+    const mine = found.filter((x) => isOkuriValue(x.value));
+    tally = { n: mine.length, sum: Number(mine.reduce((a, x) => a + x.value / UNIT, 0n)) };
+  } catch {
+    tally = { failed: true };
+  }
+  render();
+}
+function okuriHtml() {
+  const k = profile.okuri;
+  return html`<div class="okuri-info">
+      <p class="okuri-tags"><span class="okuri-cat" data-cat="${k.cat}">${t(k.cat === 'disaster' ? 'okuri.catDisaster' : 'okuri.catOther')}</span>${k.area ? html`<span class="okuri-area">${k.area}</span>` : ''}<span class="okuri-until">${t('okuri.until', { date: fmtDay(k.until) })}</span></p>
+      ${k.msg ? html`<p class="okuri-msg">${k.msg}</p>` : ''}
+      <ul class="tip-checks okuri-facts">
+        ${facts == null ? html`<li>${t('sp.okuriChecking')}</li>`
+          : facts.n ? html`<li class="ok">${icon('check')}<span>${t('sp.okuriUsed', { n: facts.n, first: fmtDay(facts.first), last: fmtDay(facts.last), payers: facts.payers })}</span></li>`
+          : html`<li>${t('sp.okuriNoProof')}</li>`}
+        ${tally == null ? html`<li><button type="button" class="btn ghost small" data-act="okuri-count">${t('sp.okuriCount')}</button></li>`
+          : tally.failed ? html`<li>${t('sp.okuriCountFailed')}</li>`
+          : html`<li class="ok">${icon('check')}<span>${t('sp.okuriCounted', { n: tally.n, sum: yen(tally.sum) })}</span></li>`}
+      </ul>
+      <p class="fine">${t('sp.okuriJudge')}</p>
+    </div>`;
+}
+
 function tipHtml() {
   const tip = profile?.tip;
   if (!tip) return '';
@@ -58,10 +117,13 @@ function tipHtml() {
   const seen = mine.map((x) => x.r.to).filter(Boolean);
   const same = seen.some((a) => sameAddress(a, tip.to));
   const sent = myTips();
-  return html`<details class="sp-tip"${attr('open', tipOpen)}>
-    <summary>${icon('pochi')}<span>${t('sp.tipTitle')}</span><small class="opt">${t('sp.tipOptional')}</small></summary>
+  const ok = okuriActive(profile); // while the store lists itself, the section is 恩送り and starts open
+  if (ok && !okuriSeen) { okuriSeen = true; tipOpen = true; }
+  return html`<details class="sp-tip${ok ? ' sp-okuri' : ''}"${attr('open', tipOpen)}>
+    <summary>${icon('pochi')}<span>${t(ok ? 'sp.okuriTitle' : 'sp.tipTitle')}</span><small class="opt">${t('sp.tipOptional')}</small></summary>
     <div class="sp-tip-body">
-      <p class="sp-tip-lead">${t('sp.tipLead')}</p>
+      ${ok ? okuriHtml() : ''}
+      <p class="sp-tip-lead">${t(ok ? 'sp.okuriLead' : 'sp.tipLead')}</p>
       <div class="tip-amounts">${TIP_PRESETS.map((a) => html`<button type="button" class="tip-amt" data-act="tip-amt" data-a="${a}" aria-pressed="${String(tipYen === a)}">${yen(a)}</button>`)}</div>
       <label class="field tip-other"><span class="label sub">${t('sp.tipOther')}</span>
         <span class="tip-input"><input name="tipYen" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" value="${tipYen && !TIP_PRESETS.includes(tipYen) ? String(tipYen) : ''}" placeholder="${t('sp.tipOtherPh', { min: LIMITS.tipMin, max: LIMITS.tipMax.toLocaleString('ja-JP') })}"><span>${t('sp.tipYen')}</span></span></label>
@@ -137,6 +199,7 @@ function render() {
     }
   }
   if (profile?.logo) logoShown = true;
+  if (okuriActive(profile)) okuriFacts();
 }
 
 async function load() {
@@ -189,12 +252,15 @@ app.addEventListener('click', async (e) => {
       tipUi();
       break;
     }
+    case 'okuri-count':
+      countOkuri(b);
+      break;
     case 'tip-go': {
       const tip = profile?.tip;
       if (!tip || !okTip(tipYen)) return;
       const u = new URL('pay.html', location.href);
       u.hash = '';
-      u.search = new URLSearchParams({ tip: '1', to: tip.to, c: String(tipChain), a: String(tipYen), s: profile.name || '',
+      u.search = new URLSearchParams({ tip: okuriActive(profile) ? '2' : '1', to: tip.to, c: String(tipChain), a: String(tipYen), s: profile.name || '',
         b: b64urlEncode(Uint8Array.from(pub.match(/../g), (h) => parseInt(h, 16))), ...(profile.color ? { bc: profile.color.slice(1) } : {}) }).toString();
       location.href = u.toString();
       break;

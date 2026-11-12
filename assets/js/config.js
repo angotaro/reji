@@ -91,10 +91,13 @@ export function addChainParams(id) {
 }
 
 export const TIP_PRESETS = [100, 300, 500, 1000];
+// 恩送り (pay it forward): stores that welcome support list themselves; supporters send directly. Nobody holds the money.
+export const OKURI = { tag: 'reji-okuri', testTag: 'reji-okuri-test', days: [7, 14, 30], cats: ['disaster', 'other'], msgMax: 80, areaMax: 20, proofs: 5 };
 export const LIMITS = {
   maxYen: 10_000_000, // per sale sanity cap
   suffixMax: 999_999, // unique wei suffix range (invisible: < 0.000000000001 JPYC)
   tipMark: 8_888_888, // wei added to every tip (末広がりの8): outside the sale range, so a tip can never look like a sale
+  okuriMark: 3_939_393, // wei added to every 恩送り (39 = サンキュー): its own mark, so anyone can count them on-chain; never a sale
   tipMin: 10,
   tipMax: 50_000,
   maxItems: 200,

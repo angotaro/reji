@@ -14,16 +14,18 @@ CROPS = {
     '19-pay-nowallet': ('19-pay-nowallet', 1150), '18-receipt-itemized': ('18-receipt-itemized', 1300),
     '14-pay-brand': ('14-pay-ready', 1050), '18-receipt-brand': ('18-receipt-itemized', 1300),
     '20-sign-page': ('20-sign-page', 1687), '20-store-page': ('20-store-page', 1560), '22-pop': ('22-pop', 1173),
-    '21-receipt-addressee': ('21-receipt-addressee', 1500), '33-offline-banner': ('33-offline-banner', 300), '23-store-tip': ('23-store-tip', 1250), '24-tip-done': ('24-tip-done', 1480),
+    '21-receipt-addressee': ('21-receipt-addressee', 1500), '33-offline-banner': ('33-offline-banner', 300),
+    '41-okuri-board': ('41-okuri-board', 1560), '42-okuri-store': ('42-okuri-store', 2330, 'bottom'), '23-store-tip': ('23-store-tip', 1250), '24-tip-done': ('24-tip-done', 1480),
 }
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     names = sorted(set(re.findall(r'src="img/([^"]+)\.jpg"', open(os.path.join(HERE, 'runbook.html'), encoding='utf-8').read())))
     for name in names:
-        src, keep = CROPS.get(name, (name, None))
+        src, keep, *rest = CROPS.get(name, (name, None))
         im = Image.open(os.path.join(SHOTS, f'{src}.png')).convert('RGB')
-        if keep: im = im.crop((0, 0, im.size[0], min(keep, im.size[1])))
+        if keep and rest: im = im.crop((0, max(0, im.size[1] - keep), im.size[0], im.size[1]))  # the bottom of the page
+        elif keep: im = im.crop((0, 0, im.size[0], min(keep, im.size[1])))
         w, h = im.size
         target = 960 if w > h else 440  # landscape (tablet) / portrait (phone)
         if w > target: im = im.resize((target, round(h * target / w)), Image.LANCZOS)

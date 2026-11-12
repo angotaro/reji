@@ -4,7 +4,7 @@
 // QR carries only a pointer (the profile's public key) and the colour, so there is
 // no server, and nobody else can publish a profile under that key.
 import { store, b64urlEncode } from './util.js';
-import { CHAINS, resolveChain } from './config.js';
+import { CHAINS, resolveChain, OKURI } from './config.js';
 import { isAddress, sameAddress, checksum } from './evm.js';
 import { recoverPersonal } from './secp256k1.js';
 import { parseOwnerMessage } from './ownermsg.js';
@@ -93,6 +93,7 @@ export function brandProfile(s) {
     link: links[0] || '', links, tagline: clean(s.tagline, 40), people: clean(s.people, 40), about: cleanText(s.about, 300),
     event: { name: clean(s.eventName, 40), space: clean(s.eventSpace, 20) },
     ...(tipOffer(s) ? { tip: tipOffer(s) } : {}),
+    ...(okuriOffer(s) ? { okuri: okuriOffer(s) } : {}),
     ...(menuOf(s) ? { menu: menuOf(s) } : {}),
   };
 }
@@ -157,6 +158,7 @@ export function parseBrand(json, pub = '') {
       name: clean(o.name, 60), color: safeColor(o.color), logo: validLogo(o.logo), msg: clean(o.msg, 120), link: links[0] || '', links,
       tagline: clean(o.tagline, 40), people: clean(o.people, 40), about: cleanText(o.about, 300), event: { name: clean(ev.name, 40), space: clean(ev.space, 20) },
       tip: pub ? verifyTip(o.tip, pub) : null,
+      okuri: pub && verifyTip(o.tip, pub) ? parseOkuri(o.okuri) : null, // only a store whose wallet signed for support can list
       menu: parseMenu(o.menu),
       addr: /^0x[0-9a-fA-F]{40}$/.test(String(o.addr || '')) ? String(o.addr) : '',
     };
@@ -193,6 +195,27 @@ export async function restoreBrandKey(k) {
   return true;
 }
 export const brandSent = () => store.get(SENT, null); // { at, hash } of the last accepted publish
+// ---- 恩送り: a store that welcomes support lists itself for a while. It rides on the signed tip offer. ----
+const okuriCat = (c) => (OKURI.cats.includes(c) ? c : 'other');
+const cleanProofs = (list) => (Array.isArray(list) ? list : []).filter((x) => x && CHAINS[Number(x.c)] && /^0x[0-9a-f]{64}$/.test(String(x.tx || '')))
+  .slice(0, OKURI.proofs).map((x) => ({ c: Number(x.c), tx: String(x.tx) }));
+function parseOkuri(k) {
+  if (!k || typeof k !== 'object') return null;
+  const until = Number(k.until);
+  const since = Number(k.since);
+  if (!Number.isFinite(until) || !Number.isFinite(since) || until <= since || until - since > 31 * 86_400_000) return null;
+  return { cat: okuriCat(k.cat), msg: clean(k.msg, OKURI.msgMax), area: clean(k.area, OKURI.areaMax), since, until, proofs: cleanProofs(k.proofs) };
+}
+/** What the profile says about 恩送り, or null: only with a valid tip offer, and only until the end date. */
+export function okuriOffer(s, now = Date.now(), pub = brandPub()) {
+  const k = s?.okuri;
+  if (!k?.on || !tipOffer(s, pub)) return null;
+  const o = parseOkuri(k);
+  return o && o.until > now ? o : null;
+}
+export const okuriActive = (b, now = Date.now()) => !!(b?.tip && b.okuri && b.okuri.until > now && b.okuri.since <= now + 600_000);
+export const okuriTag = (test) => (test ? OKURI.testTag : OKURI.tag);
+
 const sha256Hex = async (s) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))), (b) => b.toString(16).padStart(2, '0')).join('');
 
 /** Publishes the store's profile; a quiet no-op when it is unchanged and was sent in the last 3 days. */
@@ -204,7 +227,8 @@ export async function publishBrand(s, { force = false } = {}) {
   if (!force && last?.hash === hash && Date.now() - last.at < 3 * 86_400_000) return 'fresh';
   const key = await ensureBrandKey();
   const [{ makeEvent, Pool }, { privateKeyFromHex }] = await Promise.all([import('./nostr.js'), import('./secp256k1.js')]);
-  const ev = await makeEvent(privateKeyFromHex(key.sk), BRAND_KIND, [['d', BRAND_D], ['alt', 'Reji store profile']], content);
+  const listed = okuriOffer(s) ? [['t', okuriTag(s.network === 'testnet')]] : []; // how the 恩送り board finds it; gone when it ends
+  const ev = await makeEvent(privateKeyFromHex(key.sk), BRAND_KIND, [['d', BRAND_D], ['alt', 'Reji store profile'], ...listed], content);
   const pool = new Pool().connect();
   try {
     const ok = await pool.publish(ev, 10_000);
@@ -252,6 +276,35 @@ export async function fetchBrand(pub, timeoutMs = 6000) {
       const first = !best;
       if (!best || ev.created_at > best.created_at) best = ev;
       if (first) setTimeout(end, 700); // a moment for a newer copy from another relay
+    });
+  });
+}
+
+/** The 恩送り board: every store listing itself right now, read from the relays and checked here. No server, no approval. */
+export async function fetchOkuriBoard({ test = false, timeoutMs = 5000 } = {}) {
+  const { Pool, verifyEvent } = await import('./nostr.js');
+  const pool = new Pool().connect();
+  const newest = new Map();
+  return new Promise((resolve) => {
+    let unsub = () => {};
+    const end = () => {
+      unsub();
+      pool.close();
+      const out = [];
+      for (const ev of newest.values()) {
+        const b = parseBrand(ev.content, ev.pubkey);
+        if (b && okuriActive(b)) out.push({ pub: ev.pubkey, b });
+      }
+      // disasters first, then the listings that end soonest
+      resolve(out.sort((x, y) => (x.b.okuri.cat === y.b.okuri.cat ? x.b.okuri.until - y.b.okuri.until : x.b.okuri.cat === 'disaster' ? -1 : 1)).slice(0, 200));
+    };
+    setTimeout(end, timeoutMs);
+    unsub = pool.subscribe({ kinds: [BRAND_KIND], '#t': [okuriTag(test)], limit: 300 }, async (ev) => {
+      if (ev?.kind !== BRAND_KIND || !/^[0-9a-f]{64}$/.test(ev.pubkey || '') || !Array.isArray(ev.tags) || !ev.tags.some((x) => x[0] === 'd' && x[1] === BRAND_D)) return;
+      if (!ev.tags.some((x) => x[0] === 't' && x[1] === okuriTag(test))) return;
+      if (typeof ev.content !== 'string' || ev.content.length > 60000 || !(await verifyEvent(ev))) return;
+      const had = newest.get(ev.pubkey);
+      if (!had || ev.created_at > had.created_at) newest.set(ev.pubkey, ev);
     });
   });
 }

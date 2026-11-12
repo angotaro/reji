@@ -2,7 +2,8 @@
 import { html, raw, $, $$, uid, toast, download, store, attr, fmtInt, clamp, ymd, shortAddr, copyText, forQr, riskyHost } from './util.js';
 import { t, getLang, setLang, fmtDateTime, fmtDay } from './i18n.js';
 import { brandFields, brandPreview, readBrand, bindBrandFields } from './brandui.js';
-import { hasBrand, publishBrand, brandSent, brandKeyForBackup, restoreBrandKey, brandPub, brandProfile, storePageUrl, ensureBrandKey, tipCode, tipOffer } from './brand.js';
+import { hasBrand, publishBrand, brandSent, brandKeyForBackup, restoreBrandKey, brandPub, brandProfile, storePageUrl, ensureBrandKey, tipCode, tipOffer, okuriOffer } from './brand.js';
+import { OKURI } from './config.js';
 import { storeCard } from './storecard.js';
 import { installCard } from './install.js';
 import { saveBackup, readBackup, applyBackup, BACKUP_AT } from './backup.js';
@@ -157,6 +158,7 @@ const infoSec = (s) => {
         <button type="button" class="btn quiet" data-act="tips-off">${t('tips.off')}</button>`
       : s.tips ? html`<p class="notice warn">${t('tips.resign')}</p><button type="button" class="btn ghost" data-act="tips-on">${icon('lock')}<span>${t('tips.resignBtn')}</span></button>`
       : html`<button type="button" class="btn ghost" data-act="tips-on">${icon('lock')}<span>${t('tips.on')}</span></button>`}
+    ${tipOffer(s) ? okuriSetHtml(s) : ''}
     <small class="hint">${t('tips.notes')}</small>
   </div>
   <div class="info-box">
@@ -345,6 +347,49 @@ async function addRpc(btn) {
   fillRpc();
 }
 
+// ---- 恩送り: a store that welcomes support lists itself on the public board for a while ----
+function okuriSetHtml(s) {
+  const k = okuriOffer(s);
+  const board = `okuri.html${s.network === 'testnet' ? '?test=1' : ''}`;
+  return html`<div class="okuri-set">
+    <h4>${t('okuri.setTitle')}</h4>
+    ${k ? html`<p class="tip-state">${icon('check')}<span>${t('okuri.onState', { date: fmtDay(k.until) })}</span></p>
+        ${k.msg ? html`<p class="hint">「${k.msg}」</p>` : ''}
+        <div class="btn-row"><a class="btn quiet" href="${board}" target="_blank" rel="noopener">${icon('external')}<span>${t('okuri.seeBoard')}</span></a>
+          <button type="button" class="btn quiet" data-act="okuri-off">${t('okuri.off')}</button></div>`
+      : html`<p class="hint">${t('okuri.setLead')}</p>
+        <div class="btn-row"><button type="button" class="btn ghost" data-act="okuri-on">${t('okuri.on')}</button>
+          <a class="btn quiet" href="${board}" target="_blank" rel="noopener">${icon('external')}<span>${t('okuri.seeBoard')}</span></a></div>`}
+  </div>`;
+}
+/** A few of the store's own past sales, spread over time: anyone can look them up, so real use is checkable. */
+function okuriProofs(s) {
+  const test = s.network === 'testnet';
+  const list = state.sales.filter((x) => x.txHash && !!x.testnet === test).sort((a, b) => a.paidAt - b.paidAt);
+  const n = Math.min(OKURI.proofs, list.length);
+  const pick = n < 2 ? list.slice(0, n) : Array.from({ length: n }, (_, i) => list[Math.round((i * (list.length - 1)) / (n - 1))]);
+  return [...new Set(pick)].map((x) => ({ c: x.chainId, tx: String(x.txHash).toLowerCase() }));
+}
+function okuriDialog() {
+  const m = modal(html`<h2 class="modal-title">${t('okuri.dlgTitle')}</h2>
+    <p class="modal-text">${t('okuri.dlgLead')}</p>
+    <fieldset class="field"><legend class="label">${t('okuri.cat')}</legend>
+      <label class="check"><input type="radio" name="ocat" value="other" checked><span>${t('okuri.catOtherLong')}</span></label>
+      <label class="check"><input type="radio" name="ocat" value="disaster"><span>${t('okuri.catDisasterLong')}</span></label></fieldset>
+    <label class="field"><span class="label">${t('okuri.area')}</span><input name="oarea" type="text" maxlength="${OKURI.areaMax}" autocomplete="off" placeholder="${t('okuri.areaPh')}"></label>
+    <label class="field"><span class="label">${t('okuri.msg')}</span><input name="omsg" type="text" maxlength="${OKURI.msgMax}" autocomplete="off" placeholder="${t('okuri.msgPh')}"></label>
+    <label class="field"><span class="label">${t('okuri.days')}</span><select name="odays">${OKURI.days.map((d) => html`<option value="${d}"${attr('selected', d === 14)}>${t('okuri.daysN', { n: d })}</option>`)}</select></label>
+    <p class="hint">${t('okuri.setNotes')}</p>
+    <div class="modal-actions"><button type="button" class="btn ghost" data-close>${t('common.cancel')}</button>
+      <button type="button" class="btn primary" data-ok>${t('okuri.start')}</button></div>`, { label: t('okuri.dlgTitle') });
+  const q = (n) => m.el.querySelector(`[name="${n}"]`);
+  m.el.querySelector('[data-ok]').addEventListener('click', () => m.close({
+    cat: m.el.querySelector('[name="ocat"]:checked')?.value === 'disaster' ? 'disaster' : 'other',
+    area: q('oarea').value.trim(), msg: q('omsg').value.trim(), days: Number(q('odays').value) || 14,
+  }));
+  return m.result.then((v) => (v && typeof v === 'object' ? v : null));
+}
+
 const aboutSec = () => html`<section class="set-sec" id="sec-about">
   <h2>${t('set.sec.about')}</h2>
   ${installCard()}
@@ -358,6 +403,7 @@ const aboutSec = () => html`<section class="set-sec" id="sec-about">
     <a class="btn quiet" href="${JPYC.site}" target="_blank" rel="noopener noreferrer">${icon('external')}<span>${t('about.jpycSite')}</span></a>
     <a class="btn quiet" href="${JPYC.faucet}" target="_blank" rel="noopener noreferrer">${icon('external')}<span>${t('about.faucet')}</span></a>
     <a class="btn quiet" href="receipt.html" target="_blank" rel="noopener">${icon('receipt')}<span>${t('about.receipts')}</span></a>
+    <a class="btn quiet" href="okuri.html" target="_blank" rel="noopener">${icon('pochi')}<span>${t('about.okuri')}</span></a>
     <a class="btn quiet" href="terms.html" target="_blank" rel="noopener">${icon('external')}<span>${t('about.terms')}</span></a>
     <a class="btn quiet" href="privacy.html" target="_blank" rel="noopener">${icon('external')}<span>${t('about.privacy')}</span></a>
   </div>
@@ -662,9 +708,28 @@ async function onClick(e) {
       rerenderSection('info');
       break;
     }
+    case 'okuri-on': {
+      if (dirty) { toast(t('info.saveFirstShort'), 'warn'); break; }
+      if (!tipOffer(state.settings)) break;
+      const v = await okuriDialog();
+      if (!v) break;
+      const now = Date.now();
+      saveSettings({ ...state.settings, okuri: { on: true, cat: v.cat, area: v.area, msg: v.msg, since: now, until: now + v.days * 86_400_000, proofs: okuriProofs(state.settings) } });
+      publishBrand(state.settings, { force: true }).catch(() => {});
+      toast(t('okuri.onToast'));
+      rerenderSection('info');
+      break;
+    }
+    case 'okuri-off':
+      if (!(await confirmDialog({ title: t('okuri.offTitle'), body: t('okuri.offBody'), ok: t('okuri.off') }))) break;
+      saveSettings({ ...state.settings, okuri: null });
+      publishBrand(state.settings, { force: true }).catch(() => {});
+      toast(t('okuri.offToast'));
+      rerenderSection('info');
+      break;
     case 'tips-off':
       if (!(await confirmDialog({ title: t('tips.offTitle'), body: t('tips.offBody'), ok: t('tips.off') }))) break;
-      saveSettings({ ...state.settings, tips: false, tipAtt: null });
+      saveSettings({ ...state.settings, tips: false, tipAtt: null, okuri: null });
       publishBrand(state.settings, { force: true }).catch(() => {});
       toast(t('tips.offToast'));
       rerenderSection('info');
