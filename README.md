@@ -109,6 +109,18 @@ For when a payment can't be confirmed on the spot, a store can turn on **pay lat
 
 Pay later is trust-based (the goods go before the payment), so it is opt-in and capped; the rules are in `assets/js/latercore.js`.
 
+### Accounting export
+
+「売上CSV」 opens a picker: Reji's own list, or journal entries for Yayoi, freee or Money Forward Cloud. Each sale becomes one line per tax rate (debit: the account JPYC was received into; credit: sales; amounts tax-included), with the product's own tax-category names. Yayoi's file is Shift-JIS in its 25-column import format; the others are UTF-8. The encoder needs no library: it builds its table by decoding every Shift-JIS code with the browser's `TextDecoder`. The layouts are in `assets/js/accounting.js`.
+
+### Addresses without `.html`
+
+On Cloudflare the build step writes links, generated payment and store addresses, and the canonical tags without `.html` (Cloudflare serves `/okuri` for `okuri.html` and redirects the old form, so existing links and printed QR codes keep working). Files keep their names, so the source runs on any host. The app manifest's `id` is left alone so installed apps keep their identity. `CLEAN_URLS=0` turns it off; `tests/clean-urls.mjs` builds a copy and checks it.
+
+### A first-time guide for customers
+
+`hajimete.html` explains, in three steps, how someone new gets a wallet, gets JPYC from the issuer's official service, and pays at a store. It is linked from the payment page, the store page (where a counter sign leads) and the landing page. It states only what is stable and points to the official site for amounts and limits.
+
 ### Pay it forward (恩送り): stores helping one another
 
 Reji takes money from no one. People who want to say thanks can instead send JPYC straight to a store that uses Reji and needs a hand. Nobody holds the money in between, and nobody approves, picks or ranks anything.
@@ -178,11 +190,12 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (63)
+node --test                        # unit tests (65)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (184 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (190 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
+node tests/clean-urls.mjs          # the deployed copy's addresses without .html
 python3 manual/images.py           # staff manual images from tests/shots/
 node manual/build.mjs              # staff manual source (manual/) → docs/reji-manual-ja.pdf
 node tests/landing-shots.mjs       # landing screenshots and demo frames (after e2e)

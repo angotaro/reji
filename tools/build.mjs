@@ -7,7 +7,7 @@
 // 2) Gives the offline cache a new name on every deploy (commit id), so every store
 //    picks up updates without editing sw.js by hand.
 // Without this step the site still works; previews may just show no image.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { riskyHost } from '../assets/js/util.js';
 
 const env = process.env;
@@ -36,7 +36,7 @@ for (const h of [site && new URL(site).hostname, env.CF_PAGES_URL && new URL(env
 if (!site) console.log('tip: on Cloudflare Workers (not Pages) set SITE_URL so link previews get absolute addresses');
 
 const abs = (p) => `${site}/${p.replace(/^\.?\//, '')}`;
-const pages = ['index.html', 'app.html', 'pay.html', 'receipt.html', 'store.html', 'sign.html', 'terms.html', 'privacy.html', 'backup.html', 'ideas.html', 'okuri.html'];
+const pages = ['index.html', 'app.html', 'pay.html', 'receipt.html', 'store.html', 'sign.html', 'terms.html', 'privacy.html', 'backup.html', 'ideas.html', 'okuri.html', 'hajimete.html'];
 if (site) {
   for (const f of pages) {
     if (!existsSync(f)) continue;
@@ -75,6 +75,30 @@ const missing = KEEP_OFF.filter((x) => !listed.has(x));
 if (missing.length) {
   writeFileSync('.assetsignore', ignoreText.replace(/\n?$/, '\n') + missing.join('\n') + '\n');
   console.log(`assets: kept off the site: ${missing.join(', ')}`);
+}
+
+// 5) Clean addresses. Cloudflare serves okuri.html at /okuri and redirects the ".html" form there, so links,
+//    QR codes and search-engine tags are written without ".html" (no extra redirect; old links keep working).
+//    The files keep their names, so the source still runs anywhere. CLEAN_URLS=0 turns this off, =1 forces it.
+const clean = env.CLEAN_URLS === '1' || (env.CLEAN_URLS !== '0' && !!(env.WORKERS_CI || env.CF_PAGES));
+if (clean) {
+  const names = pages.map((f) => f.replace(/\.html$/, '')).filter((n) => n !== 'index');
+  const link = new RegExp(`(?<![\\w.\\\\-])(${names.join('|')})\\.html\\b`, 'g');
+  const files = [...pages, 'manifest.webmanifest', ...readdirSync('assets/js').filter((f) => f.endsWith('.js')).map((f) => `assets/js/${f}`)];
+  let changed = 0;
+  for (const f of files) {
+    if (!existsSync(f)) continue;
+    const before = readFileSync(f, 'utf8');
+    // the manifest's "id" names the installed app: changing it would make phones see a different app
+    const after = before.split('\n').map((line) => (/^\s*"id":/.test(line) ? line : line.replace(link, '$1'))).join('\n');
+    if (after !== before) {
+      writeFileSync(f, after);
+      changed++;
+    }
+  }
+  console.log(`clean addresses: ".html" removed from links in ${changed} files`);
+} else {
+  console.log('clean addresses: left as they are (not building on Cloudflare; set CLEAN_URLS=1 to force)');
 }
 
 const sha = String(env.WORKERS_CI_COMMIT_SHA || env.CF_PAGES_COMMIT_SHA || '').slice(0, 8) || Date.now().toString(36);

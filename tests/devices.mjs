@@ -130,6 +130,7 @@ try {
     ['guide', null, async (pg) => { await pg.goto(BASE + 'backup.html'); await sleep(600); }],
     ['ideas', null, async (pg) => { await pg.goto(BASE + 'ideas.html'); await sleep(600); }],
     ['okuri', null, async (pg) => { await pg.goto(BASE + 'okuri.html'); await sleep(600); }],
+    ['hajimete', null, async (pg) => { await pg.goto(BASE + 'hajimete.html'); await sleep(400); }],
     ['wizard', 'fresh', async (pg) => { await pg.goto(BASE + 'app.html'); await pg.waitForSelector('.ob-card, .ob-start, [data-ob]', { timeout: 8000 }); }],
     ['register', 'register', async (pg) => {
       await pg.goto(BASE + 'app.html#/');

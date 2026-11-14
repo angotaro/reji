@@ -405,3 +405,40 @@ test('恩送り: a listing counts only with the wallet\'s signed tip offer, and 
   assert.equal(parseBrand({ name: 'x', tip, okuri: { ...okuri, until: now + 90 * 86_400_000 } }, pub).okuri, null, 'longer than a month is refused');
   assert.equal(parseBrand({ name: 'x', tip, okuri: { ...okuri, cat: 'prize' } }, pub).okuri.cat, 'other');
 });
+
+// ---- accounting export: journal lines and each product's layout ----
+import { journalLines, yayoiRows, freeeRows, mfRows, toShiftJis, accountingFile } from '../assets/js/accounting.js';
+test('accounting: one journal line per sale and tax rate, tax included, summary safe for import screens', () => {
+  const at = new Date(2026, 10, 3, 14, 5).getTime();
+  const sales = [
+    { no: '20261103-0002', paidAt: at + 1000, taxMode: 'incl', items: [{ name: 'どら焼き', price: 280, qty: 2, tax: 8 }] },
+    { no: '20261103-0001', paidAt: at, taxMode: 'incl', items: [{ name: 'カフェ"ラテ",大', price: 550, qty: 1, tax: 10 }, { name: 'クッキー', price: 216, qty: 1, tax: 8 }] },
+  ];
+  const lines = journalLines(sales);
+  assert.deepEqual(lines.map((l) => [l.no, l.rate, l.gross, l.tax]), [['20261103-0001', 10, 550, 50], ['20261103-0001', 8, 216, 16], ['20261103-0002', 8, 560, 41]]);
+  assert.equal(lines[0].date, '2026/11/03');
+  assert.ok(!/["',\n]/.test(lines[0].memo), 'no quotes or commas in the summary');
+  const a = { debit: '電子決済手段', credit: '売上高' };
+  const y = yayoiRows(lines, a);
+  assert.equal(y[0].length, 25);
+  assert.deepEqual([y[0][0], y[0][3], y[0][4], y[0][8], y[0][10], y[0][13], y[0][14], y[0][15]], ['2000', '2026/11/03', '電子決済手段', 550, '売上高', '課税売上込10%', 550, 50]);
+  assert.equal(y[1][13], '課税売上込軽減8%');
+  assert.ok([...y[0][16]].length <= 30);
+  const f = freeeRows(lines, a);
+  assert.deepEqual(f[0].slice(0, 3), ['発生日', '伝票番号', '借方勘定科目']);
+  assert.deepEqual([f[1][1], f[2][1], f[3][1], f[1][8], f[2][8]], [1, 1, 2, '課税売上10%', '課税売上8%（軽）']);
+  const m = mfRows(lines, a);
+  assert.equal(m[0].length, 23);
+  assert.deepEqual([m[1][0], m[2][0], m[3][0], m[1][14], m[2][14], m[1][8], m[1][16]], [1, 1, 2, '課売 10%', '課売 (軽)8%', 550, 550]);
+});
+test('accounting: Yayoi file is Shift-JIS, the others UTF-8 with a mark Excel reads', () => {
+  assert.deepEqual([...toShiftJis('売上A')], [0x94, 0x84, 0x8f, 0xe3, 0x41]);
+  assert.deepEqual([...toShiftJis('😀')], [0x3f], 'a character Shift-JIS lacks becomes ?');
+  const sales = [{ no: '20261103-0001', paidAt: Date.now(), taxMode: 'incl', items: [{ name: '抹茶ラテ', price: 600, qty: 1, tax: 10 }] }];
+  const y = accountingFile('yayoi', sales, {}, 'x');
+  assert.equal(new TextDecoder('shift_jis').decode(y.bytes).split(',')[4], '電子決済手段');
+  const f = accountingFile('freee', sales, { debit: 'JPYC', credit: '売上' }, 'x');
+  assert.deepEqual([...f.bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
+  assert.ok(new TextDecoder().decode(f.bytes).includes('JPYC,対象外,600,0'));
+  assert.equal(accountingFile('mf', sales, {}, 'x').lines, 1);
+});

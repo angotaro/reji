@@ -749,3 +749,12 @@ html[data-install="installed"] .install-card [data-for="installed"] { display: b
 /* ---- 恩送り in Settings ---- */
 .okuri-set { margin: 0.9rem 0; padding: 0.8rem 0.9rem; border: 1px solid #ecdfc4; border-radius: 12px; background: #fffaf0; }
 .okuri-set h4 { margin: 0 0 0.4rem; font-size: 0.98rem; }
+
+/* ---- 売上CSV: choose the layout ---- */
+.acct-formats { margin: 0.6rem 0 0.9rem; padding: 0; border: 0; display: grid; gap: 0.45rem; }
+.acct-opt { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.65rem 0.8rem; border: 1px solid var(--line-soft); border-radius: 12px; cursor: pointer; }
+.acct-opt:has(input:checked) { border-color: var(--ai, #22305a); background: var(--ai-wash, #eef1f8); }
+.acct-opt input { margin-top: 0.25rem; }
+.acct-opt b { display: block; }
+.acct-opt small { display: block; margin-top: 0.1rem; color: var(--soft); line-height: 1.5; }
+.acct-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }

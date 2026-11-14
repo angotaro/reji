@@ -876,6 +876,42 @@ try {
   ok('settings: turning pay later on and changing the days is saved', saved.payLater === true && saved.laterDays === 3);
   await lsctx.close();
 
+  // ---- 売上CSV: pick the accounting software and the file is made to match ----
+  await page.goto(`${BASE}app.html#/sales`);
+  await page.waitForSelector('[data-act="csv-sales"]');
+  await page.click('.seg [data-v="all"], [data-v="all"]');
+  await page.click('[data-act="csv-sales"]');
+  await page.waitForSelector('.modal .acct-opt');
+  ok('export: four layouts to choose from, account names only shown for accounting software', (await page.locator('.modal .acct-opt').count()) === 4
+    && await page.locator('.modal .acct-accounts').isHidden());
+  await page.check('.modal [name="afmt"][value="yayoi"]');
+  ok('export: choosing accounting software asks for the two account names, with defaults', await page.locator('.modal .acct-accounts').isVisible()
+    && (await page.inputValue('.modal [name="acredit"]')) === '売上高');
+  await page.screenshot({ path: `${OUT}/44-export-dialog.png` });
+  const [acctDl] = await Promise.all([page.waitForEvent('download'), page.click('.modal [data-ok]')]);
+  const yayoiText = new TextDecoder('shift_jis').decode(fs.readFileSync(await acctDl.path()));
+  const yr = yayoiText.trim().split('\r\n').map((l) => l.split(','));
+  ok('export: the Yayoi file is Shift-JIS, 25 columns, a journal line per sale and tax rate', /^reji-yayoi-/.test(acctDl.suggestedFilename()) && yr.length >= 1
+    && yr.every((r) => r.length === 25 && r[0] === '2000' && /^\d{4}\/\d{2}\/\d{2}$/.test(r[3]) && r[10] === '売上高' && r[8] === r[14]), yayoiText.slice(0, 200));
+  await page.click('[data-act="csv-sales"]');
+  await page.waitForSelector('.modal .acct-opt');
+  ok('export: the choice is remembered next time', await page.isChecked('.modal [name="afmt"][value="yayoi"]'));
+  await page.check('.modal [name="afmt"][value="raw"]');
+  const [acctDl2] = await Promise.all([page.waitForEvent('download'), page.click('.modal [data-ok]')]);
+  ok('export: "as is" still saves Reji\'s own list', /^reji-sales-/.test(acctDl2.suggestedFilename()));
+
+  // ---- はじめてのJPYC: the guide a new customer reaches from the pages they land on ----
+  const hj = await cust.newPage();
+  watch(hj, 'first-time guide', errors);
+  await hj.goto(new URL(storeHref, BASE).href);
+  await hj.waitForSelector('.pay-foot a[href="hajimete.html"]');
+  await hj.click('.pay-foot a[href="hajimete.html"]');
+  await hj.waitForSelector('.hj-steps');
+  ok('first-time guide: reached from the store page, three steps and the official source for JPYC', (await hj.locator('.hj-steps > li').count()) === 3
+    && (await hj.locator('a[href="https://jpyc.co.jp/"]').count()) === 1 && (await hj.textContent('main')).includes('復元フレーズ'));
+  await hj.screenshot({ path: `${OUT}/43-hajimete.png`, fullPage: true });
+  await hj.close();
+
   // ---- 恩送り (pay it forward): a store lists itself, supporters send directly, nobody in between ----
   const salesBeforeOkuri = await page.evaluate(() => JSON.parse(localStorage.getItem('reji:sales:v1')).length);
   await page.goto(`${BASE}app.html#/settings?s=info`);

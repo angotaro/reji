@@ -1,5 +1,6 @@
 // Sales ledger: daily summary (a Z report), receipts, CSV export, unpaid charges.
-import { html, raw, $, $$, yen, fmtInt, shortAddr, csv, download, toast, copyText, attr, ymd, pad2 } from './util.js';
+import { html, raw, $, $$, yen, fmtInt, shortAddr, csv, download, toast, copyText, attr, ymd, pad2, store } from './util.js';
+import { ACCT_FORMATS, ACCT_DEFAULTS, accountingFile } from './accounting.js';
 import { t, fmtDateTime, fmtDay, fmtTime } from './i18n.js';
 import { chainName, explorerTx } from './config.js';
 import { computeTotals } from './tax.js';
@@ -262,7 +263,7 @@ async function onClick(e) {
     renderBody();
   } else if (act === 'open') openSale(b.dataset.id);
   else if (act === 'print-z') printZ();
-  else if (act === 'csv-sales') exportSales();
+  else if (act === 'csv-sales') exportDialog();
   else if (act === 'csv-items') exportItems();
   else if (act === 'recheck') recheck(b.dataset.id, b);
   else if (act === 'later-qr') { const u = state.unpaid.find((x) => x.id === b.dataset.id); if (u) showLaterQr(u); }
@@ -408,6 +409,44 @@ function exportSales() {
     ];
   });
   download(`reji-sales-${range}-${ymd()}.csv`, csv([t('csv.salesHead').split('|'), ...rows]), 'text/csv;charset=utf-8');
+}
+
+// ---- 売上CSV: pick the layout (Reji's own, or an accounting product's) and it is made to match ----
+const ACCT_KEY = 'reji:acct:v1';
+function exportDialog() {
+  const list = filtered();
+  const pref = store.get(ACCT_KEY, {}) || {};
+  const fmt0 = ACCT_FORMATS.includes(pref.fmt) ? pref.fmt : 'raw';
+  const m = modal(html`<h2 class="modal-title">${t('acct.title')}</h2>
+    <p class="modal-text">${t('acct.lead', { range: rangeText(), n: list.length })}</p>
+    <fieldset class="acct-formats"><legend class="sr-only">${t('acct.title')}</legend>
+      ${ACCT_FORMATS.map((f) => html`<label class="acct-opt"><input type="radio" name="afmt" value="${f}"${attr('checked', f === fmt0)}>
+        <span><b>${t(`acct.f.${f}`)}</b><small>${t(`acct.h.${f}`)}</small></span></label>`)}
+    </fieldset>
+    <div class="acct-accounts"${attr('hidden', fmt0 === 'raw')}>
+      <div class="acct-two">
+        <label class="field"><span class="label">${t('acct.debit')}</span><input name="adebit" type="text" maxlength="24" autocomplete="off" value="${pref.debit || ACCT_DEFAULTS.debit}"></label>
+        <label class="field"><span class="label">${t('acct.credit')}</span><input name="acredit" type="text" maxlength="24" autocomplete="off" value="${pref.credit || ACCT_DEFAULTS.credit}"></label>
+      </div>
+      <p class="hint">${t('acct.accountsHint')}</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" data-close>${t('common.cancel')}</button>
+      <button type="button" class="btn primary" data-ok>${icon('download')}<span>${t('acct.save')}</span></button>
+    </div>`, { label: t('acct.title') });
+  const el = m.el;
+  const fmt = () => el.querySelector('[name="afmt"]:checked')?.value || 'raw';
+  el.querySelector('.acct-formats').addEventListener('change', () => { el.querySelector('.acct-accounts').hidden = fmt() === 'raw'; });
+  el.querySelector('[data-ok]').addEventListener('click', () => {
+    const f = fmt();
+    const accounts = { debit: el.querySelector('[name="adebit"]').value.trim(), credit: el.querySelector('[name="acredit"]').value.trim() };
+    store.set(ACCT_KEY, { fmt: f, ...accounts });
+    m.close();
+    if (f === 'raw') { exportSales(); return; }
+    const file = accountingFile(f, list, accounts, `${range}-${ymd()}`);
+    download(file.name, new Blob([file.bytes], { type: file.type }), file.type);
+    toast(t('acct.saved', { n: file.lines }));
+  });
 }
 
 function exportItems() {

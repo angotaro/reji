@@ -68,3 +68,10 @@ body.legal { margin: 0; background: var(--mist); color: var(--ink); font-family:
 .ok-tagline { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
 .ok-card .btn { margin-top: auto; align-self: flex-start; }
 .ok-empty { padding: 1.2rem; border: 1px dashed var(--line-soft); border-radius: 14px; text-align: center; line-height: 1.8; }
+
+/* ---- はじめてのJPYC: numbered steps ---- */
+.lg-main .hj-steps { list-style: none; margin: 1rem 0; padding: 0; counter-reset: hj; display: grid; gap: 1rem; }
+.hj-steps > li { counter-increment: hj; position: relative; padding: 1.1rem 1.1rem 0.6rem 4rem; border: 1px solid var(--line-soft); border-radius: 14px; background: #fff; }
+.hj-steps > li::before { content: counter(hj); position: absolute; left: 1.1rem; top: 1.05rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; background: var(--ai, #22305a); color: #fff; font-weight: 800; }
+.hj-steps h3 { margin: 0.2rem 0 0.5rem; }
+@media (max-width: 520px) { .hj-steps > li { padding-left: 1.1rem; padding-top: 3.6rem; } }

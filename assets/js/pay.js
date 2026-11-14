@@ -106,7 +106,7 @@ function render() {
       ${req ? billHtml() : ''}
       <section class="pay-panel" aria-live="polite">${panelHtml()}</section>
     </main>
-    <footer class="pay-foot"><p>${req?.tip ? tk('pay.tipFooter') : t('pay.footer')}</p><p><a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
+    <footer class="pay-foot"><p>${req?.tip ? tk('pay.tipFooter') : t('pay.footer')}</p><p><a href="hajimete.html">${t('pay.firstTime')}</a> · <a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
   if (S.brand?.logo) S.logoShown = true;
   if (S.phase === 'ready' && !S.wallets.length) watchManual();
 }

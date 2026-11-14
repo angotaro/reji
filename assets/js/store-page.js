@@ -190,7 +190,7 @@ function render() {
       </section>` : ''}
       ${tipHtml()}
     </main>
-    <footer class="pay-foot"><p><a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
+    <footer class="pay-foot"><p><a href="hajimete.html">${t('pay.firstTime')}</a> · <a href="receipt.html">${t('pay.myReceipts')}</a></p></footer>`);
   if (focused) {
     const el = app.querySelector(`[name="${focused.name}"]`);
     if (el) {
