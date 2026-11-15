@@ -111,7 +111,11 @@ Pay later is trust-based (the goods go before the payment), so it is opt-in and 
 
 ### Accounting export
 
-「売上CSV」 opens a picker: Reji's own list, or journal entries for Yayoi, freee or Money Forward Cloud. Each sale becomes one line per tax rate (debit: the account JPYC was received into; credit: sales; amounts tax-included), with the product's own tax-category names. Yayoi's file is Shift-JIS in its 25-column import format; the others are UTF-8. The encoder needs no library: it builds its table by decoding every Shift-JIS code with the browser's `TextDecoder`. The layouts are in `assets/js/accounting.js`.
+「売上CSV」 opens a picker: Reji's own list, or journal entries for Yayoi, freee or Money Forward Cloud. Each sale becomes one line per tax rate (debit: the account JPYC was received into; credit: sales; amounts tax-included), with the product's own tax-category names, each checked against the vendor's published table. Yayoi's file is Shift-JIS in its 25-column import format; the others are UTF-8. The encoder needs no library: it builds its table by decoding every Shift-JIS code with the browser's `TextDecoder`. The layouts are in `assets/js/accounting.js`.
+
+### Refunds
+
+Reji never moves money, so a refund is sent by the owner from the store's own wallet. 「返金する」 on a sale (PIN-protected) asks for the amount, in full or in part, then shows the payer's address and the amount to send. While that window is open, and again whenever the sale is reopened, Reji scans transfers to the payer and records the one sent from the store's receiving address for that amount, after the refund was started. A transaction ID can be entered instead. Refunds appear on the sale, as a badge in the list, in the summary (with the net) in the plain CSV, and in the accounting layouts as a sales return dated the day of the refund (split across the sale's tax rates in proportion, with each product's return category). The matching rule is `findRefund` in `assets/js/refund.js`.
 
 ### New-version notice
 
@@ -194,9 +198,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (65)
+node --test                        # unit tests (67)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (190 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (198 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/clean-urls.mjs          # the deployed copy's addresses without .html

@@ -6,19 +6,46 @@ export const ACCT_FORMATS = ['raw', 'yayoi', 'freee', 'mf'];
 export const ACCT_DEFAULTS = { debit: '電子決済手段', credit: '売上高' };
 
 // How each product names the tax category of a sale (prices as paid, tax included).
+// Checked against each vendor's published tables (Yayoi: 課税方式別税区分・税計算区分一覧; Money Forward: 税区分の一覧;
+// freee: its help and developer pages, which write the reduced rate with half-width brackets).
 const TAX = {
   yayoi: { 10: '課税売上込10%', 8: '課税売上込軽減8%', 0: '非課売上', none: '対象外' },
-  freee: { 10: '課税売上10%', 8: '課税売上8%（軽）', 0: '非課売上', none: '対象外' },
+  freee: { 10: '課税売上10%', 8: '課税売上8%(軽)', 0: '非課売上', none: '対象外' },
   mf: { 10: '課売 10%', 8: '課売 (軽)8%', 0: '非売', none: '対象外' },
+};
+// A refund is a sales return: its own tax category, entered on the day it was refunded.
+const TAX_RETURN = {
+  yayoi: { 10: '課税売返込10%', 8: '課税売返込軽減8%', 0: '非課売返', none: '対象外' },
+  freee: { 10: '課税売返10%', 8: '課税売返8%(軽)', 0: '非課売返', none: '対象外' },
+  mf: { 10: '課売-返還 10%', 8: '課売-返還 (軽)8%', 0: '非売-返還', none: '対象外' },
 };
 const pad2 = (n) => String(n).padStart(2, '0');
 const ymdSlash = (ms) => { const d = new Date(ms); return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}`; };
 // Import screens choke on quotes, commas and line breaks inside the summary.
 const plain = (s) => String(s ?? '').replace(/["',\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
 
-/** [{ date, no, rate (10 | 8 | 0 | null), gross, tax, memo }] oldest first. */
+/** A refund spread over the sale's tax rates in proportion (the largest share takes the rounding). */
+function refundParts(s, amountYen) {
+  const groups = computeTotals(s.items || [], s.taxMode).byRate.filter((g) => g.gross > 0);
+  const total = groups.reduce((a, g) => a + g.gross, 0);
+  if (!total) return [{ rate: null, gross: amountYen }];
+  const parts = groups.map((g) => ({ rate: g.rate ?? null, gross: Math.floor((amountYen * g.gross) / total), weight: g.gross }));
+  parts.sort((a, b) => b.weight - a.weight)[0].gross += amountYen - parts.reduce((a, x) => a + x.gross, 0);
+  return parts.filter((x) => x.gross > 0);
+}
+const taxInside = (gross, rate) => (rate ? Math.floor((gross * rate) / (100 + rate)) : 0);
+
+/** [{ date, no, rate (10 | 8 | 0 | null), gross, tax, memo, refund? }]: sales oldest first, then their refunds. */
 export function journalLines(sales) {
   const out = [];
+  const refunds = [];
+  for (const s of sales) {
+    for (const r of s.refunds || []) {
+      for (const part of refundParts(s, r.amountYen)) {
+        refunds.push({ date: ymdSlash(r.at), at: r.at, no: `${s.no}-R`, rate: part.rate, gross: part.gross, tax: taxInside(part.gross, part.rate), memo: plain(`Reji ${s.no} 返金 JPYC`), refund: true });
+      }
+    }
+  }
   for (const s of [...sales].sort((a, b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt))) {
     const first = (s.items || [])[0]?.name || '';
     const memo = plain(`Reji ${s.no} JPYC ${first}${(s.items || []).length > 1 ? ' ほか' : ''}`);
@@ -27,17 +54,24 @@ export function journalLines(sales) {
       out.push({ date: ymdSlash(s.paidAt || s.createdAt), no: s.no, rate: g.rate ?? null, gross: g.gross, tax: g.tax || 0, memo });
     }
   }
-  return out;
+  return [...out, ...refunds.sort((a, b) => a.at - b.at)];
 }
-const taxName = (fmt, rate) => TAX[fmt][rate == null ? 'none' : rate] ?? TAX[fmt].none;
+const taxName = (fmt, l) => { const tbl = l.refund ? TAX_RETURN[fmt] : TAX[fmt]; return tbl[l.rate == null ? 'none' : l.rate] ?? tbl.none; };
+// One line as [debit account, debit tax, debit tax amount, credit account, credit tax, credit tax amount]:
+// a sale is "received / sales"; a refund turns it around, "sales (return) / received".
+const sides = (fmt, l, a) => (l.refund
+  ? [a.credit, taxName(fmt, l), l.tax, a.debit, TAX[fmt].none, 0]
+  : [a.debit, TAX[fmt].none, 0, a.credit, taxName(fmt, l), l.tax]);
 
 const cell = (v) => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const toCsv = (rows) => rows.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
 
 /** Yayoi import format (弥生インポート形式): 25 columns, no header, Shift-JIS. */
 export function yayoiRows(lines, a) {
-  return lines.map((l) => ['2000', '', '', l.date, a.debit, '', '', TAX.yayoi.none, l.gross, '', a.credit, '', '', taxName('yayoi', l.rate), l.gross, l.tax || '',
-    [...l.memo].slice(0, 30).join(''), '', '', '0', '', '', '0', '0', 'no']);
+  return lines.map((l) => {
+    const [da, dt, dx, ca, ct, cx] = sides('yayoi', l, a);
+    return ['2000', '', '', l.date, da, '', '', dt, l.gross, dx || '', ca, '', '', ct, l.gross, cx || '', [...l.memo].slice(0, 30).join(''), '', '', '0', '', '', '0', '0', 'no'];
+  });
 }
 /** freee: general journal data, debit and credit in separate columns. */
 export function freeeRows(lines, a) {
@@ -45,7 +79,8 @@ export function freeeRows(lines, a) {
   const nos = new Map();
   return [head, ...lines.map((l) => {
     if (!nos.has(l.no)) nos.set(l.no, nos.size + 1);
-    return [l.date, nos.get(l.no), a.debit, TAX.freee.none, l.gross, 0, l.memo, a.credit, taxName('freee', l.rate), l.gross, l.tax, l.memo];
+    const [da, dt, dx, ca, ct, cx] = sides('freee', l, a);
+    return [l.date, nos.get(l.no), da, dt, l.gross, dx, l.memo, ca, ct, l.gross, cx, l.memo];
   })];
 }
 /** Money Forward Cloud: journal import. Lines sharing a 取引No become one entry. */
@@ -55,7 +90,8 @@ export function mfRows(lines, a) {
   const nos = new Map();
   return [head, ...lines.map((l) => {
     if (!nos.has(l.no)) nos.set(l.no, nos.size + 1);
-    return [nos.get(l.no), l.date, a.debit, '', '', '', TAX.mf.none, '', l.gross, 0, a.credit, '', '', '', taxName('mf', l.rate), '', l.gross, l.tax, l.memo, '', '', '', ''];
+    const [da, dt, dx, ca, ct, cx] = sides('mf', l, a);
+    return [nos.get(l.no), l.date, da, '', '', '', dt, '', l.gross, dx, ca, '', '', '', ct, '', l.gross, cx, l.memo, '', '', '', ''];
   })];
 }
 

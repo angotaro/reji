@@ -426,7 +426,7 @@ test('accounting: one journal line per sale and tax rate, tax included, summary 
   assert.ok([...y[0][16]].length <= 30);
   const f = freeeRows(lines, a);
   assert.deepEqual(f[0].slice(0, 3), ['発生日', '伝票番号', '借方勘定科目']);
-  assert.deepEqual([f[1][1], f[2][1], f[3][1], f[1][8], f[2][8]], [1, 1, 2, '課税売上10%', '課税売上8%（軽）']);
+  assert.deepEqual([f[1][1], f[2][1], f[3][1], f[1][8], f[2][8]], [1, 1, 2, '課税売上10%', '課税売上8%(軽)']);
   const m = mfRows(lines, a);
   assert.equal(m[0].length, 23);
   assert.deepEqual([m[1][0], m[2][0], m[3][0], m[1][14], m[2][14], m[1][8], m[1][16]], [1, 1, 2, '課売 10%', '課売 (軽)8%', 550, 550]);
@@ -441,4 +441,40 @@ test('accounting: Yayoi file is Shift-JIS, the others UTF-8 with a mark Excel re
   assert.deepEqual([...f.bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
   assert.ok(new TextDecoder().decode(f.bytes).includes('JPYC,対象外,600,0'));
   assert.equal(accountingFile('mf', sales, {}, 'x').lines, 1);
+});
+
+// ---- refunds: recognising the store's transfer back, and how much is left to refund ----
+import { findRefund, refundableYen, refundState } from '../assets/js/refund.js';
+test('refund: only the store\'s own transfer of that amount, after the refund began, counted once', () => {
+  const U = 10n ** 18n;
+  const store = '0xAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaa';
+  const keyOf = (tr) => `${tr.txHash}:${tr.logIndex}`;
+  const tr = (n, from, value, block) => ({ from, value, blockNumber: block, txHash: '0x' + n, logIndex: 0 });
+  const req = { store, amountYen: 600, startBlock: 100 };
+  const list = [tr('1', '0xbbbb', 600n * U, 120), tr('2', store.toLowerCase(), 500n * U, 120), tr('3', store, 600n * U, 90), tr('4', store.toLowerCase(), 600n * U, 130), tr('5', store, 600n * U, 125)];
+  assert.equal(findRefund(list, req, new Set(), keyOf).txHash, '0x5', 'the earliest that fits');
+  assert.equal(findRefund(list, req, new Set(['0x5:0']), keyOf).txHash, '0x4', 'one already recorded is skipped');
+  assert.equal(findRefund(list.slice(0, 3), req, new Set(), keyOf), null, 'someone else, another amount, or too early');
+  const sale = { amountYen: 1000, refunds: [{ amountYen: 400 }] };
+  assert.deepEqual([refundableYen(sale), refundState(sale), refundState({ amountYen: 500 }), refundState({ amountYen: 500, refunds: [{ amountYen: 500 }] })], [600, 'part', 'none', 'full']);
+});
+
+test('accounting: a refund is a sales return on the day it was refunded, split by tax rate, in each product\'s wording', () => {
+  const at = new Date(2026, 10, 3, 14, 5).getTime();
+  const day = 86_400_000;
+  const sale = { no: '20261103-0001', paidAt: at, taxMode: 'incl', items: [{ name: 'カフェラテ', price: 550, qty: 2, tax: 10 }, { name: 'どら焼き', price: 300, qty: 3, tax: 8 }],
+    refunds: [{ amountYen: 2000, at: at + 2 * day }, { amountYen: 300, at: at + day }] };
+  const lines = journalLines([sale]);
+  assert.deepEqual(lines.filter((l) => !l.refund).map((l) => [l.rate, l.gross]), [[10, 1100], [8, 900]]);
+  const r = lines.filter((l) => l.refund);
+  assert.deepEqual(r.map((l) => [l.date, l.rate, l.gross, l.tax]), [['2026/11/04', 10, 165, 15], ['2026/11/04', 8, 135, 10], ['2026/11/05', 10, 1100, 100], ['2026/11/05', 8, 900, 66]]);
+  assert.equal(r.reduce((a, l) => a + l.gross, 0), 2300, 'the parts add up to what was refunded');
+  const a = { debit: '電子決済手段', credit: '売上高' };
+  const y = yayoiRows(r, a)[0];
+  assert.deepEqual([y[4], y[7], y[8], y[9], y[10], y[13], y[14]], ['売上高', '課税売返込10%', 165, 15, '電子決済手段', '対象外', 165]);
+  assert.equal(yayoiRows(r, a)[1][7], '課税売返込軽減8%');
+  const f = freeeRows(r, a);
+  assert.deepEqual([f[1][2], f[1][3], f[2][3], f[1][7], f[1][8]], ['売上高', '課税売返10%', '課税売返8%(軽)', '電子決済手段', '対象外']);
+  const m = mfRows(r, a);
+  assert.deepEqual([m[1][2], m[1][6], m[2][6], m[1][10], m[1][14]], ['売上高', '課売-返還 10%', '課売-返還 (軽)8%', '電子決済手段', '対象外']);
 });

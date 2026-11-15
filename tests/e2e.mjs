@@ -900,6 +900,51 @@ try {
   const [acctDl2] = await Promise.all([page.waitForEvent('download'), page.click('.modal [data-ok]')]);
   ok('export: "as is" still saves Reji\'s own list', /^reji-sales-/.test(acctDl2.suggestedFilename()));
 
+  // ---- refunds: the owner sends JPYC back from the store's wallet; Reji recognises it and records it ----
+  const salesLS = () => page.evaluate(() => JSON.parse(localStorage.getItem('reji:sales:v1')));
+  await page.goto(`${BASE}app.html#/sales`);
+  await page.waitForSelector('[data-act="open"]');
+  const rid = await page.locator('[data-act="open"]').first().getAttribute('data-id');
+  const rsale = (await salesLS()).find((x) => x.id === rid);
+  await page.click(`[data-act="open"][data-id="${rid}"]`);
+  await page.click('.modal [data-a="refund"]');
+  await page.waitForSelector('.modal [name="ramount"]');
+  ok('refund: starts at the full amount of the sale', Number(await page.inputValue('.modal [name="ramount"]')) === rsale.amountYen);
+  await page.fill('.modal [name="ramount"]', '200');
+  await page.fill('.modal [name="rmemo"]', '品切れのため');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('.modal .refund-steps');
+  ok('refund: shows the customer\'s address and the amount to send, and waits', (await page.locator('.modal .refund-steps code').first().textContent()) === rsale.from
+    && (await page.locator('.modal .refund-steps code').nth(1).textContent()) === '200');
+  await page.screenshot({ path: `${OUT}/45-refund-send.png` });
+  addTransfer({ from: CUSTOMER, to: rsale.from, value: 200n * UNIT, tx: '0x' + 'e1'.repeat(32) }); // someone else sends the same amount
+  await sleep(6500);
+  ok('refund: a transfer of the same amount from someone else is not taken for it', !((await salesLS()).find((x) => x.id === rid).refunds || []).length);
+  addTransfer({ from: MERCHANT, to: rsale.from, value: 200n * UNIT, tx: '0x' + 'e2'.repeat(32) });
+  await page.waitForFunction((id) => (JSON.parse(localStorage.getItem('reji:sales:v1')).find((x) => x.id === id).refunds || []).length === 1, rid, { timeout: 30000 });
+  const afterPart = (await salesLS()).find((x) => x.id === rid);
+  ok('refund: the store\'s own transfer is found and recorded on the sale', afterPart.refunds[0].amountYen === 200 && afterPart.refunds[0].txHash === '0x' + 'e2'.repeat(32) && !afterPart.refundPending);
+  await page.waitForSelector(`[data-id="${rid}"] .row-refund`);
+  ok('sales: the list marks the sale and the summary shows refunds and what is left', (await page.locator('.z-refund').count()) === 1 && (await page.textContent('.z-refund')).includes('200'));
+  await page.screenshot({ path: `${OUT}/46-refund-list.png` });
+  await page.click(`[data-act="open"][data-id="${rid}"]`);
+  ok('sale window: lists the refund with its note', (await page.textContent('.modal .refund-list')).includes('品切れのため'));
+  await page.click('.modal [data-a="refund"]');
+  await page.waitForSelector('.modal [name="ramount"]');
+  ok('refund: only what is left can be refunded', Number(await page.inputValue('.modal [name="ramount"]')) === rsale.amountYen - 200);
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('.modal .refund-steps');
+  const restTx = '0x' + 'e3'.repeat(32);
+  addTransfer({ from: MERCHANT, to: rsale.from, value: BigInt(rsale.amountYen - 200) * UNIT, tx: restTx, ahead: 0 });
+  await page.click('.modal .refund-manual summary');
+  await page.fill('.modal [name="rtx"]', restTx);
+  await page.click('.modal [data-a="check-tx"]');
+  await page.waitForFunction((id) => (JSON.parse(localStorage.getItem('reji:sales:v1')).find((x) => x.id === id).refunds || []).length === 2, rid, { timeout: 30000 });
+  await page.click(`[data-act="open"][data-id="${rid}"]`);
+  await page.waitForSelector('.modal .refund-list');
+  ok('refund: fully refunded, so no refund button is left', (await page.locator('.modal [data-a="refund"]').count()) === 0);
+  await page.click('.modal [data-close]');
+
   // ---- はじめてのJPYC: the guide a new customer reaches from the pages they land on ----
   const hj = await cust.newPage();
   watch(hj, 'first-time guide', errors);

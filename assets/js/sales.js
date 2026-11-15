@@ -2,12 +2,14 @@
 import { html, raw, $, $$, yen, fmtInt, shortAddr, csv, download, toast, copyText, attr, ymd, pad2, store } from './util.js';
 import { ACCT_FORMATS, ACCT_DEFAULTS, accountingFile } from './accounting.js';
 import { t, fmtDateTime, fmtDay, fmtTime } from './i18n.js';
-import { chainName, explorerTx } from './config.js';
+import { chainName, explorerTx, CHAINS } from './config.js';
+import { refundedYen, refundableYen, refundState, findRefund } from './refund.js';
+import { blockNumber, scanTransfers, txReceipt, transfersInReceipt } from './rpc.js';
 import { computeTotals } from './tax.js';
 import { receiptFromSale, receiptUrl, renderReceipt } from './receipt.js';
 import { qrSvg } from './qr.js';
 import { exactUnits, formatUnits } from './evm.js';
-import { state, saveSales, saveUnpaid, isTestnet, on } from './state.js';
+import { state, saveSales, saveUnpaid, isTestnet, on, transferKey } from './state.js';
 import { icon, modal, confirmDialog, requirePin, printHtml, chainBadge } from './ui.js';
 import { recheckUnpaid, bookUnpaid, trackConfirmations, printSale, confText } from './charge.js';
 import { isLater, isOpenLater } from './latercore.js';
@@ -62,8 +64,11 @@ export function summarize(list) {
   const chains = new Map();
   const items = new Map();
   let total = 0;
+  let refund = 0;
+  let refundCount = 0;
   for (const s of list) {
     total += s.amountYen;
+    if (refundedYen(s)) { refund += refundedYen(s); refundCount++; }
     for (const g of computeTotals(s.items || [], s.taxMode).byRate) {
       const k = g.rate == null ? 'na' : g.rate;
       const r = rates.get(k) || { rate: g.rate, gross: 0, tax: 0 };
@@ -86,6 +91,8 @@ export function summarize(list) {
   return {
     count: list.length,
     total,
+    refund,
+    refundCount,
     avg: list.length ? Math.round(total / list.length) : 0,
     rates: [...rates.values()].sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1)),
     chains: [...chains.values()].sort((a, b) => b.sum - a.sum),
@@ -132,6 +139,7 @@ function summaryHtml(list, sum) {
     <p class="z-range">${rangeText()}</p>
     <p class="z-total">${yen(sum.total)}</p>
     <p class="z-count">${t('sales.countAvg', { n: sum.count, avg: yen(sum.avg) })}</p>
+    ${sum.refund ? html`<p class="z-refund">${t('refund.summary', { sum: yen(sum.refund), n: sum.refundCount, net: yen(sum.total - sum.refund) })}</p>` : ''}
     ${sum.rates.length ? html`<dl class="z-rows">${sum.rates.map((r) => html`<div>
         <dt>${r.rate ? t('rc.target', { rate: r.rate }) : t('rc.taxFree')}</dt>
         <dd>${yen(r.gross)}${r.rate ? html` <small>${t('sales.taxOf', { tax: yen(r.tax) })}</small>` : ''}</dd>
@@ -177,7 +185,7 @@ function rowHtml(s) {
   const st = s.flag === 'failed' ? 'bad' : s.confirmed ? 'ok' : 'wait';
   return html`<li><button type="button" class="row" data-act="open" data-id="${s.id}">
     <span class="row-time">${fmtTime(when(s))}</span>
-    <span class="row-main"><span class="row-desc">${s.desc || s.no}</span><span class="row-no">${s.no}</span></span>
+    <span class="row-main"><span class="row-desc">${s.desc || s.no}${refundState(s) !== 'none' ? html` <span class="row-refund">${t(refundState(s) === 'full' ? 'refund.badgeFull' : 'refund.badgePart')}</span>` : ''}</span><span class="row-no">${s.no}</span></span>
     <span class="row-chain">${chainBadge(chainName(s.chainId), s.testnet)}</span>
     <span class="row-amt">${yen(s.amountYen)}</span>
     <span class="row-state" data-state="${st}" title="${confText(s)}">${st === 'ok' ? icon('check') : raw('<span class="mini-dot"></span>')}<span class="sr-only">${confText(s)}</span></span>
@@ -342,12 +350,15 @@ async function openSale(id) {
       <p class="sale-status" data-state="${s.flag === 'failed' ? 'bad' : s.confirmed ? 'ok' : 'wait'}">${confText(s)}</p>
       ${s.match && s.match !== 'exact' ? html`<p class="paid-flag">${t('match.' + s.match)}</p>` : ''}
       ${s.late ? html`<p class="hint">${t(s.payLater ? 'later.saleNote' : 'sales.lateNote')}</p>` : ''}
+      ${(s.refunds || []).length ? html`<ul class="refund-list">${s.refunds.map((r) => html`<li><b>${t('refund.line', { amount: yen(r.amountYen), date: fmtDateTime(r.at) })}</b>${r.memo ? html`<span>${r.memo}</span>` : ''}
+        <a href="${explorerTx(r.chainId, r.txHash)}" target="_blank" rel="noopener noreferrer">${t('sales.explorer')}</a></li>`)}</ul>` : ''}
       <div class="qr-frame small">${raw(qrSvg(link, { ecl: 'L', title: t('charge.receiptQr') }))}</div>
       <p class="hint">${t('sales.qrHint')}</p>
       <div class="btn-col">
         <button type="button" class="btn ghost" data-a="print">${icon('print')}<span>${t('charge.print')}</span></button>
         <button type="button" class="btn ghost" data-a="copy">${icon('copy')}<span>${t('charge.copyReceipt')}</span></button>
         ${s.txHash ? html`<a class="btn ghost" href="${explorerTx(s.chainId, s.txHash)}" target="_blank" rel="noopener noreferrer">${icon('external')}<span>${t('sales.explorer')}</span></a>` : ''}
+        ${s.from && s.txHash && (refundableYen(s) || s.refundPending) ? html`<button type="button" class="btn ghost" data-a="refund">${icon('back')}<span>${t(s.refundPending ? 'refund.resume' : 'refund.button')}</span></button>` : ''}
         <button type="button" class="btn danger-ghost" data-a="delete">${icon('trash')}<span>${t('sales.delete')}</span></button>
       </div>
     </div>
@@ -360,6 +371,9 @@ async function openSale(id) {
     else if (b.dataset.a === 'copy') {
       const ok = await copyText(link);
       toast(ok ? t('common.copied') : t('common.copyFailed'), ok ? 'info' : 'error');
+    } else if (b.dataset.a === 'refund') {
+      m.close();
+      refundFlow(s.id);
     } else if (b.dataset.a === 'delete') {
       m.close();
       if (!(await requirePin(state.settings))) return;
@@ -372,6 +386,103 @@ async function openSale(id) {
     }
   });
   if (!s.confirmed) trackConfirmations(s);
+}
+
+// ---- refunds: the owner sends JPYC back from the store's wallet; Reji recognises it and records it ----
+const refundKeys = () => new Set(state.sales.flatMap((x) => (x.refunds || []).map((r) => transferKey(r.txHash, r.logIndex))));
+async function refundFlow(id) {
+  const s = state.sales.find((x) => x.id === id);
+  if (!s) return;
+  if (!(await requirePin(state.settings))) return;
+  if (!s.refundPending) {
+    const v = await refundAsk(s);
+    if (!v) return;
+    let startBlock = 0;
+    try { startBlock = await blockNumber(s.chainId); } catch { /* offline: worked out from the time when it is checked */ }
+    s.refundPending = { amountYen: v.amountYen, memo: v.memo, startBlock, at: Date.now() };
+    saveSales();
+  }
+  refundSend(s);
+}
+function refundAsk(s) {
+  const max = refundableYen(s);
+  const m = modal(html`<h2 class="modal-title">${t('refund.title')}</h2>
+    <p class="modal-text">${t('refund.lead')}</p>
+    <label class="field"><span class="label">${t('refund.amount', { max: yen(max) })}</span>
+      <input name="ramount" type="number" inputmode="numeric" min="1" max="${max}" step="1" value="${max}"></label>
+    <label class="field"><span class="label">${t('refund.memo')}</span><input name="rmemo" type="text" maxlength="60" autocomplete="off" placeholder="${t('refund.memoPh')}"></label>
+    <div class="modal-actions"><button type="button" class="btn ghost" data-close>${t('common.cancel')}</button>
+      <button type="button" class="btn primary" data-ok>${t('refund.next')}</button></div>`, { label: t('refund.title'), size: 'small' });
+  m.el.querySelector('[data-ok]').addEventListener('click', () => {
+    const amountYen = Math.floor(Number(m.el.querySelector('[name="ramount"]').value));
+    if (!(amountYen >= 1 && amountYen <= max)) { toast(t('refund.badAmount', { max: yen(max) }), 'error'); return; }
+    m.close({ amountYen, memo: m.el.querySelector('[name="rmemo"]').value.trim().slice(0, 60) });
+  });
+  return m.result.then((v) => (v && typeof v === 'object' ? v : null));
+}
+function refundSend(s) {
+  const p = s.refundPending;
+  const m = modal(html`<h2 class="modal-title">${t('refund.sendTitle', { amount: yen(p.amountYen) })}</h2>
+    <p class="modal-text">${t('refund.sendLead')}</p>
+    <ol class="refund-steps">
+      <li>${t('refund.step1', { chain: chainName(s.chainId) })}</li>
+      <li>${t('refund.step2')}<span class="refund-copy"><code>${s.from}</code><button type="button" class="btn small ghost" data-a="copy-to">${icon('copy')}<span>${t('common.copy')}</span></button></span></li>
+      <li>${t('refund.step3')}<span class="refund-copy"><code>${p.amountYen}</code><button type="button" class="btn small ghost" data-a="copy-amt">${icon('copy')}<span>${t('common.copy')}</span></button></span></li>
+    </ol>
+    <p class="refund-status" data-state="wait" role="status">${t('refund.waiting')}</p>
+    <details class="refund-manual"><summary>${t('refund.byTx')}</summary>
+      <div class="refund-copy"><input name="rtx" type="text" autocomplete="off" spellcheck="false" placeholder="0x…"><button type="button" class="btn small" data-a="check-tx">${t('refund.check')}</button></div></details>
+    <div class="modal-actions"><button type="button" class="btn danger-ghost" data-a="drop">${t('refund.drop')}</button>
+      <button type="button" class="btn ghost" data-close>${t('refund.later')}</button></div>`, { label: t('refund.title') });
+  let open = true;
+  const status = m.el.querySelector('.refund-status');
+  const done = (tr) => {
+    if (!open) return;
+    open = false;
+    s.refunds = [...(s.refunds || []), { amountYen: p.amountYen, memo: p.memo, chainId: s.chainId, txHash: tr.txHash, logIndex: tr.logIndex, at: Date.now() }];
+    delete s.refundPending;
+    saveSales();
+    renderBody();
+    m.close();
+    toast(t('refund.done', { amount: yen(p.amountYen) }));
+  };
+  const look = async () => {
+    if (!open) return;
+    try {
+      const latest = await blockNumber(s.chainId);
+      const from = p.startBlock || Math.max(0, latest - Math.ceil((Date.now() - p.at) / 1000 / CHAINS[s.chainId].blockTime) - 30);
+      const found = await scanTransfers(s.chainId, s.from, from, latest, { chunk: 2000, maxChunks: 30 });
+      const hit = findRefund(found, { store: s.to, amountYen: p.amountYen, startBlock: from }, refundKeys(), (x) => transferKey(x.txHash, x.logIndex));
+      if (hit) { done(hit); return; }
+    } catch { /* offline or a busy node: the next round tries again */ }
+    if (open) setTimeout(look, 4000);
+  };
+  look();
+  m.result.then(() => { open = false; });
+  m.el.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-a]');
+    if (!b) return;
+    if (b.dataset.a === 'copy-to' || b.dataset.a === 'copy-amt') {
+      const ok = await copyText(b.dataset.a === 'copy-to' ? s.from : String(p.amountYen));
+      toast(ok ? t('common.copied') : t('common.copyFailed'), ok ? 'info' : 'error');
+    } else if (b.dataset.a === 'drop') {
+      delete s.refundPending;
+      saveSales();
+      m.close();
+      toast(t('refund.dropped'));
+    } else if (b.dataset.a === 'check-tx') {
+      const hash = m.el.querySelector('[name="rtx"]').value.trim().toLowerCase();
+      if (!/^0x[0-9a-f]{64}$/.test(hash)) { toast(t('refund.badTx'), 'error'); return; }
+      status.textContent = t('refund.checking');
+      try {
+        const rc = await txReceipt(s.chainId, hash);
+        const hit = rc && findRefund(transfersInReceipt(rc, s.from), { store: s.to, amountYen: p.amountYen }, refundKeys(), (x) => transferKey(x.txHash, x.logIndex));
+        if (hit) { done(hit); return; }
+      } catch { /* not found */ }
+      status.textContent = t('refund.waiting');
+      toast(t('refund.noMatch', { amount: yen(p.amountYen) }), 'error');
+    }
+  });
 }
 
 function printZ() {
@@ -406,6 +517,7 @@ function exportSales() {
       dstr(d), tstr(d), s.no, s.amountYen, g(10).gross, g(10).tax, g(8).gross, g(8).tax, free,
       s.taxMode === 'excl' ? t('csv.excl') : t('csv.incl'), chainName(s.chainId), s.txHash, s.from, s.to, received,
       t('match.short.' + (s.match || 'exact')), s.confirmed ? 'Y' : 'N', (s.items || []).map((i) => `${i.name}×${i.qty}`).join(' / '),
+      refundedYen(s) || '', (s.refunds || []).map((r) => dstr(new Date(r.at))).join(' / '), (s.refunds || []).map((r) => r.txHash).join(' / '),
     ];
   });
   download(`reji-sales-${range}-${ymd()}.csv`, csv([t('csv.salesHead').split('|'), ...rows]), 'text/csv;charset=utf-8');

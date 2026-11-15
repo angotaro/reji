@@ -761,3 +761,15 @@ html[data-install="installed"] .install-card [data-for="installed"] { display: b
 
 /* ---- a new version has arrived ---- */
 .update-banner { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; justify-content: space-between; margin: 0; padding: 0.55rem 1rem; background: #e9f1e4; color: #24451c; border-bottom: 1px solid #c9dcbf; font-size: 0.92rem; line-height: 1.6; }
+
+/* ---- refunds ---- */
+.row-refund { margin-left: 0.4rem; padding: 0.05rem 0.5rem; border-radius: 999px; background: #fbe7e1; color: #8a2d16; font-size: 0.75rem; font-weight: 700; }
+.z-refund { margin: 0.2rem 0 0.4rem; color: #8a2d16; font-size: 0.9rem; }
+.refund-list { list-style: none; margin: 0.4rem 0; padding: 0.6rem 0.7rem; border-radius: 10px; background: #fdf1ed; display: grid; gap: 0.4rem; font-size: 0.88rem; }
+.refund-list li { display: flex; flex-wrap: wrap; gap: 0.3rem 0.7rem; align-items: baseline; }
+.refund-steps { margin: 0.6rem 0; padding-left: 1.3rem; display: grid; gap: 0.7rem; line-height: 1.7; }
+.refund-copy { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.3rem; }
+.refund-copy code { padding: 0.25rem 0.5rem; border-radius: 8px; background: var(--ai-wash, #eef1f8); font-size: 0.86rem; word-break: break-all; }
+.refund-copy input { flex: 1 1 14rem; }
+.refund-status { margin: 0.6rem 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: #fff4d6; color: #5c4400; font-size: 0.9rem; line-height: 1.6; }
+.refund-manual { margin: 0.4rem 0 0.8rem; font-size: 0.9rem; }
