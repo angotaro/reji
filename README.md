@@ -113,6 +113,10 @@ Pay later is trust-based (the goods go before the payment), so it is opt-in and 
 
 「売上CSV」 opens a picker: Reji's own list, or journal entries for Yayoi, freee or Money Forward Cloud. Each sale becomes one line per tax rate (debit: the account JPYC was received into; credit: sales; amounts tax-included), with the product's own tax-category names. Yayoi's file is Shift-JIS in its 25-column import format; the others are UTF-8. The encoder needs no library: it builds its table by decoding every Shift-JIS code with the browser's `TextDecoder`. The layouts are in `assets/js/accounting.js`.
 
+### New-version notice
+
+The offline cache also holds the app's own files, so a deploy only shows after a reload. The register asks for a newer `sw.js` whenever it returns to the foreground and every 30 minutes; when one has taken over, a bar under the header says so with an 「更新する」 button that reloads. A charge in progress survives the reload. `tests/offline-workers.mjs` simulates a deploy while the app is open.
+
 ### Addresses without `.html`
 
 On Cloudflare the build step writes links, generated payment and store addresses, and the canonical tags without `.html` (Cloudflare serves `/okuri` for `okuri.html` and redirects the old form, so existing links and printed QR codes keep working). Files keep their names, so the source runs on any host. The app manifest's `id` is left alone so installed apps keep their identity. `CLEAN_URLS=0` turns it off; `tests/clean-urls.mjs` builds a copy and checks it.

@@ -180,8 +180,24 @@ state.sales
   .forEach((s, i) => setTimeout(() => trackConfirmations(s), 800 + i * 500));
 
 if (state.settings.address) keepData(); // a set-up store: ask the browser to keep its data
+// The offline cache also keeps the app's own files, so a new version only shows after a reload. Look for one
+// whenever the register comes back to the front (it may stay open all day), and say so when it has arrived.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  const hadVersion = !!navigator.serviceWorker.controller; // false on the very first visit: nothing to update from
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    const look = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) look(); });
+    setInterval(look, 30 * 60_000);
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadVersion || document.querySelector('.update-banner')) return;
+    const bar = Object.assign(document.createElement('div'), { className: 'update-banner' });
+    bar.setAttribute('role', 'status');
+    const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'btn small primary', textContent: t('update.reload') });
+    btn.addEventListener('click', () => location.reload());
+    bar.append(Object.assign(document.createElement('span'), { textContent: t('update.ready') }), btn);
+    top.after(bar);
+  });
 }
 
 // Keep the store's public profile (logo, colour, link) fresh on the relays.

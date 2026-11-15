@@ -758,3 +758,6 @@ html[data-install="installed"] .install-card [data-for="installed"] { display: b
 .acct-opt b { display: block; }
 .acct-opt small { display: block; margin-top: 0.1rem; color: var(--soft); line-height: 1.5; }
 .acct-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
+
+/* ---- a new version has arrived ---- */
+.update-banner { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; justify-content: space-between; margin: 0; padding: 0.55rem 1rem; background: #e9f1e4; color: #24451c; border-bottom: 1px solid #c9dcbf; font-size: 0.92rem; line-height: 1.6; }
