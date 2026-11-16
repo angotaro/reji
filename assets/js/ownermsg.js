@@ -1,7 +1,7 @@
 // The text an owner signs, and a strict parser for it (used by the register,
 // the owner's phone page and the tamper check at start-up).
 export const OWNER_PREFIX = 'Reji: store owner confirmation';
-export const OWNER_ACTIONS = ['verify-owner', 'change-address', 'withdraw-gas', 'show-gas-key', 'accept-tips'];
+export const OWNER_ACTIONS = ['verify-owner', 'change-address', 'withdraw-gas', 'show-gas-key', 'accept-tips', 'accept-stand'];
 
 export function ownerMessage(action, address, code, storeName) {
   const store = String(storeName || '-').replace(/[\r\n]+/g, ' ').trim().slice(0, 80) || '-';

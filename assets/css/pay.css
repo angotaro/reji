@@ -166,3 +166,9 @@ html, body { overflow-x: clip; }
 .sp-okuri { border-color: #ecdfc4; background: #fffaf0; }
 .okuri-info { margin-bottom: 0.8rem; padding-bottom: 0.8rem; border-bottom: 1px dashed #e3d4b3; }
 .okuri-facts { margin: 0.3rem 0 0.5rem; }
+
+/* ---- 置きQR on the store page ---- */
+.sp-stand { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line-soft, #d9dde8); border-radius: 14px; background: #fff; display: grid; gap: 0.7rem; }
+.sp-stand .panel-title { margin: 0; }
+.sp-items li .sp-add { flex: none; margin-left: 0.5rem; min-width: 2.2rem; padding: 0.15rem 0.5rem; font-weight: 800; }
+.sp-stand .stand-clear { justify-self: start; }

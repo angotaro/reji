@@ -93,6 +93,7 @@ export function brandProfile(s) {
     link: links[0] || '', links, tagline: clean(s.tagline, 40), people: clean(s.people, 40), about: cleanText(s.about, 300),
     event: { name: clean(s.eventName, 40), space: clean(s.eventSpace, 20) },
     ...(tipOffer(s) ? { tip: tipOffer(s) } : {}),
+    ...(standOffer(s) ? { stand: standOffer(s) } : {}),
     ...(okuriOffer(s) ? { okuri: okuriOffer(s) } : {}),
     ...(menuOf(s) ? { menu: menuOf(s) } : {}),
   };
@@ -123,15 +124,23 @@ export function tipOffer(s, pub = brandPub()) {
   const chains = [...new Set((s.chains || []).map((id) => resolveChain(id, s.network)).filter((id) => CHAINS[id]))];
   return { to: checksum(s.address), msg: a.message, sig: a.signature, chains: chains.length ? chains : [137] };
 }
-/** Checked on the supporter's phone: the wallet that receives the tip signed "accept tips" for this very profile. */
-export function verifyTip(tip, pub) {
+/** A standing QR (置きQR) for unattended sales: customers type the amount on the store page. Signed like tips. */
+export function standOffer(s, pub = brandPub()) {
+  const a = s?.standAtt;
+  if (!s?.stand || !a || !pub || a.code !== tipCode(pub) || !sameAddress(a.wallet, s.address)) return null;
+  const chains = [...new Set((s.chains || []).map((id) => resolveChain(id, s.network)).filter((id) => CHAINS[id]))];
+  return { to: checksum(s.address), msg: a.message, sig: a.signature, chains: chains.length ? chains : [137] };
+}
+export const verifyStand = (o, pub) => verifyTip(o, pub, 'accept-stand');
+/** Checked on the customer's phone: the wallet that receives signed this action for this very profile. */
+export function verifyTip(tip, pub, action = 'accept-tips') {
   if (!tip || typeof tip !== 'object' || !/^[0-9a-f]{64}$/.test(pub || '')) return null;
   const to = String(tip.to || '');
   const msg = String(tip.msg || '');
   const sig = String(tip.sig || '');
   if (!isAddress(to) || msg.length > 600 || !/^0x[0-9a-fA-F]{130}$/.test(sig)) return null;
   const m = parseOwnerMessage(msg);
-  if (!m || m.action !== 'accept-tips' || m.code !== tipCode(pub) || !sameAddress(m.wallet, to)) return null;
+  if (!m || m.action !== action || m.code !== tipCode(pub) || !sameAddress(m.wallet, to)) return null;
   let signer = '';
   try { signer = recoverPersonal(msg, sig); } catch { return null; }
   if (!sameAddress(signer, to)) return null;
@@ -158,6 +167,7 @@ export function parseBrand(json, pub = '') {
       name: clean(o.name, 60), color: safeColor(o.color), logo: validLogo(o.logo), msg: clean(o.msg, 120), link: links[0] || '', links,
       tagline: clean(o.tagline, 40), people: clean(o.people, 40), about: cleanText(o.about, 300), event: { name: clean(ev.name, 40), space: clean(ev.space, 20) },
       tip: pub ? verifyTip(o.tip, pub) : null,
+      stand: pub ? verifyStand(o.stand, pub) : null,
       okuri: pub && verifyTip(o.tip, pub) ? parseOkuri(o.okuri) : null, // only a store whose wallet signed for support can list
       menu: parseMenu(o.menu),
       addr: /^0x[0-9a-fA-F]{40}$/.test(String(o.addr || '')) ? String(o.addr) : '',

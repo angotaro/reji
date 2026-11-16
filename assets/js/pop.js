@@ -7,7 +7,7 @@ import { qrSvg } from './qr.js';
 import { chainName } from './config.js';
 import { validLogo, safeColor, DEFAULT_COLOR, eventLine } from './brand.js';
 
-export function popHtml(s, { pageUrl = '', free = false } = {}) {
+export function popHtml(s, { pageUrl = '', free = false, stand = false } = {}) {
   const logo = validLogo(s.logo);
   const ev = eventLine({ name: s.eventName, space: s.eventSpace });
   const chains = (s.chains || []).map(chainName).join('・');
@@ -17,11 +17,11 @@ export function popHtml(s, { pageUrl = '', free = false } = {}) {
     ${s.tagline ? html`<p class="pop-tag">${s.tagline}</p>` : ''}
     ${ev ? html`<p class="pop-event">${ev}</p>` : ''}
     <div class="pop-pay">
-      <p class="pop-big">${t('pop.ok')}</p>
-      <p class="pop-sub">${t(free ? 'pop.free' : 'pop.noFee')}</p>
-      <p class="pop-how">${t('pop.how', { chains })}</p>
+      <p class="pop-big">${t(stand ? 'pop.standBig' : 'pop.ok')}</p>
+      <p class="pop-sub">${t(stand ? 'pop.standSub' : free ? 'pop.free' : 'pop.noFee')}</p>
+      <p class="pop-how">${t(stand ? 'pop.standHow' : 'pop.how', { chains })}</p>
     </div>
-    ${pageUrl ? html`<div class="pop-qr">${raw(qrSvg(forQr(pageUrl), { ecl: 'M', margin: 1 }))}<p>${t('pop.qr')}</p></div>` : ''}
+    ${pageUrl ? html`<div class="pop-qr">${raw(qrSvg(forQr(pageUrl), { ecl: 'M', margin: 1 }))}<p>${t(stand ? 'pop.standQr' : 'pop.qr')}</p></div>` : ''}
     <p class="pop-foot">${t('pop.foot')}</p>
   </article>`;
 }

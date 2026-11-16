@@ -773,3 +773,8 @@ html[data-install="installed"] .install-card [data-for="installed"] { display: b
 .refund-copy input { flex: 1 1 14rem; }
 .refund-status { margin: 0.6rem 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: #fff4d6; color: #5c4400; font-size: 0.9rem; line-height: 1.6; }
 .refund-manual { margin: 0.4rem 0 0.8rem; font-size: 0.9rem; }
+
+/* ---- 置きQR ---- */
+.stand-box { margin-top: 1rem; }
+.row-stand { margin-left: 0.4rem; padding: 0.05rem 0.5rem; border-radius: 999px; background: #e9f1e4; color: #24451c; font-size: 0.75rem; font-weight: 700; }
+.stand-inbox { border-color: #c9dcbf; background: #f4f9f1; }

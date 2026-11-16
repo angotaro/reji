@@ -93,7 +93,8 @@ test('every key used in the code exists', () => {
   const dir = path.join(path.dirname(new URL(import.meta.url).pathname), '../assets/js');
   const keys = new Set(Object.keys(STRINGS.en));
   const missing = [];
-  const re = /'((?:common|nav|net|reg|kp|tax|tape|rc|charge|match|status|err|sales|csv|set|about|setup|pin|pay|rcp|gas|owner|sign|rpc)\.[\w.-]*)'/g;
+  const prefixes = [...new Set(Object.keys(STRINGS.en).map((k) => k.split('.')[0]))].filter((x) => /^[a-z]+$/.test(x)); // every group of wording, so a new one is covered too
+  const re = new RegExp(`'((?:${prefixes.join('|')})\\.[\\w.-]*)'`, 'g');
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.js') && x !== 'i18n.js')) {
     const src = fs.readFileSync(path.join(dir, f), 'utf8');
     for (const m of src.matchAll(re)) {
@@ -477,4 +478,40 @@ test('accounting: a refund is a sales return on the day it was refunded, split b
   assert.deepEqual([f[1][2], f[1][3], f[2][3], f[1][7], f[1][8]], ['売上高', '課税売返10%', '課税売返8%(軽)', '電子決済手段', '対象外']);
   const m = mfRows(r, a);
   assert.deepEqual([m[1][2], m[1][6], m[2][6], m[1][10], m[1][14]], ['売上高', '課売-返還 10%', '課売-返還 (軽)8%', '電子決済手段', '対象外']);
+});
+
+// ---- 置きQR (standing QR for unattended sales) ----
+import { standKind } from '../assets/js/standcore.js';
+import { isStandValue } from '../assets/js/evm.js';
+test('置きQR: a marked payment is a sale on its own, a hand-typed whole-yen amount waits, everything else is left alone', () => {
+  const U = 10n ** 18n;
+  const max = LIMITS.maxYen;
+  assert.equal(standKind(300n * U + BigInt(LIMITS.standMark), max), 'mark');
+  assert.equal(standKind(300n * U, max), 'plain');
+  assert.equal(standKind(300n * U + 4321n, max), null, 'a register charge carries its own fraction');
+  assert.equal(standKind(300n * U + BigInt(LIMITS.tipMark), max), null, 'a tip');
+  assert.equal(standKind(300n * U + BigInt(LIMITS.okuriMark), max), null, '恩送り');
+  assert.equal(standKind(U / 2n, max), null, 'under one yen');
+  assert.equal(standKind(BigInt(max + 1) * U, max), null, 'over the limit');
+  assert.ok(LIMITS.standMark > LIMITS.suffixMax && ![LIMITS.tipMark, LIMITS.okuriMark].includes(LIMITS.standMark));
+  assert.equal(isTipValue(300n * U + BigInt(LIMITS.standMark)), false, 'not a gift');
+  assert.equal(isStandValue(300n * U + BigInt(LIMITS.standMark)), true);
+});
+test('置きQR: only the receiving wallet\'s own "accept-stand" signature makes the offer; a tips signature does not', async () => {
+  const d = privateKeyFromHex('0x' + '6b'.repeat(32));
+  const to = checksum(addressOf(d));
+  const pub = 'ef'.repeat(32);
+  const sig = async (action) => { const msg = ownerMessage(action, to, tipCode(pub), '直売所'); return { to, msg, sig: signatureHex(await sign(personalMessageDigest(msg), d)), chains: [137] }; };
+  const stand = await sig('accept-stand');
+  const b = parseBrand({ name: '直売所', stand }, pub);
+  assert.equal(b.stand.to, to);
+  assert.equal(parseBrand({ name: 'x', stand: await sig('accept-tips') }, pub).stand, null, 'a tips signature is not a standing-QR signature');
+  assert.equal(parseBrand({ name: 'x', tip: stand }, pub).tip, null, 'and the other way round');
+  assert.equal(parseBrand({ name: 'x', stand }, 'cd'.repeat(32)).stand, null, 'bound to this profile');
+  assert.equal(parseBrand({ name: 'x', stand: { ...stand, to: '0x' + '11'.repeat(20) } }, pub).stand, null, 'another address is refused');
+});
+test('置きQR: the printed sign says "pay here" and carries the store page\'s QR', async () => {
+  const { popHtml } = await import('../assets/js/pop.js');
+  const sign = String(popHtml({ storeName: '直売所', chains: [137] }, { pageUrl: 'https://example.com/store#p=abc', stand: true }));
+  assert.ok(/ここで払えます|Pay here/.test(sign) && sign.includes('<svg') && !/JPYC払い OK|JPYC accepted/.test(sign)); // whichever language an earlier test left on
 });

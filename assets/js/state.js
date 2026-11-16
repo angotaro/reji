@@ -39,6 +39,10 @@ export const DEFAULT_SETTINGS = {
   tips: false, // accept tips (応援) on the store page
   showMenu: true, // put the menu (names, prices) on the store page
   okuri: null, // 恩送り listing: { on, cat, msg, area, since, until, proofs }
+  stand: false, // 置きQR (unattended sales): payments typed on the store page are booked as sales
+  standAtt: null,
+  standTax: 8,
+  standSince: 0,
   tipAtt: null, // the receiving wallet's signature agreeing to that, bound to the profile key
   terminal: '', // optional receipt-number prefix when running several registers
   expiryMin: 15,
@@ -108,6 +112,9 @@ export function normalizeSettings(s) {
   o.tipAtt = a && typeof a === 'object' && /^0x[0-9a-fA-F]{40}$/.test(a.wallet || '') && /^[0-9a-f]{32}$/.test(a.code || '') && typeof a.message === 'string' && a.message.length <= 600
     && /^0x[0-9a-fA-F]{130}$/.test(a.signature || '') ? { wallet: a.wallet, code: a.code, message: a.message, signature: a.signature, at: Number(a.at) || 0 } : null;
   o.tips = !!o.tips && !!o.tipAtt;
+  o.stand = !!o.stand && !!o.standAtt;
+  o.standTax = [10, 8, 0].includes(Number(o.standTax)) ? Number(o.standTax) : 8;
+  o.standSince = Number(o.standSince) || 0;
   const k = o.okuri;
   o.okuri = o.tips && k && typeof k === 'object' && k.on === true && Number.isFinite(Number(k.until)) && Number.isFinite(Number(k.since))
     ? { on: true, cat: k.cat === 'disaster' ? 'disaster' : 'other', msg: String(k.msg || '').slice(0, 80), area: String(k.area || '').slice(0, 20),

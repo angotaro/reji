@@ -113,6 +113,12 @@ Pay later is trust-based (the goods go before the payment), so it is opt-in and 
 
 「売上CSV」 opens a picker: Reji's own list, or journal entries for Yayoi, freee or Money Forward Cloud. Each sale becomes one line per tax rate (debit: the account JPYC was received into; credit: sales; amounts tax-included), with the product's own tax-category names, each checked against the vendor's published table. Yayoi's file is Shift-JIS in its 25-column import format; the others are UTF-8. The encoder needs no library: it builds its table by decoding every Shift-JIS code with the browser's `TextDecoder`. The layouts are in `assets/js/accounting.js`.
 
+### Standing QR for unattended sales (置きQR)
+
+A printed QR opens the store page, where a "pay here" section lets the customer type the amount (or tap menu items to add it up) and pay. It needs the receiving wallet's signature, like tips (`accept-stand`), and the payment page refuses any other address. A payment made from the page carries its own mark (1,010,101 wei) and the register books it as a sale by itself the next time it is open and online. A whole-yen amount typed by hand in a copy-and-send wallet carries no mark, so it waits in a short list under Sales for one tap: book as a sale, or not a sale. Sales are one line, 無人販売, at the tax rate chosen when turning it on. The rule is `standKind` in `assets/js/standcore.js`; the collector is `assets/js/stand.js`.
+
+A sticker pasted over the printed QR cannot be detected by software; the manual tells stores to check their sign.
+
 ### Refunds
 
 Reji never moves money, so a refund is sent by the owner from the store's own wallet. 「返金する」 on a sale (PIN-protected) asks for the amount, in full or in part, then shows the payer's address and the amount to send. While that window is open, and again whenever the sale is reopened, Reji scans transfers to the payer and records the one sent from the store's receiving address for that amount, after the refund was started. A transaction ID can be entered instead. Refunds appear on the sale, as a badge in the list, in the summary (with the net) in the plain CSV, and in the accounting layouts as a sales return dated the day of the refund (split across the sale's tax rates in proportion, with each product's return category). The matching rule is `findRefund` in `assets/js/refund.js`.
@@ -198,9 +204,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (67)
+node --test                        # unit tests (70)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (198 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (207 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/clean-urls.mjs          # the deployed copy's addresses without .html

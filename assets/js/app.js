@@ -14,6 +14,7 @@ import { resumeCharge, trackConfirmations, chargeOpen, rerenderCharge } from './
 import { gasWallet, refreshGasBalance, ownerState } from './gas.js';
 import { probe } from './rpc.js';
 import { startCollector } from './later.js';
+import { startStand } from './stand.js';
 import { initInstall, keepData } from './install.js';
 
 initInstall();
@@ -163,6 +164,7 @@ setInterval(() => { if (!document.hidden) checkHealth(); }, 30_000);
 // ---- boot ----
 pruneUnpaid();
 if (state.settings.address) startCollector(); // pay-later payments are booked whenever the register is online
+if (state.settings.address) startStand(); // 置きQR payments too
 if (state.pending && state.settings.address) history.replaceState(null, '', '#/');
 route().then(() => { if (state.settings.address) resumeCharge(); });
 checkHealth();

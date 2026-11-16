@@ -15,7 +15,7 @@ CROPS = {
     '14-pay-brand': ('14-pay-ready', 1050), '18-receipt-brand': ('18-receipt-itemized', 1300),
     '20-sign-page': ('20-sign-page', 1687), '20-store-page': ('20-store-page', 1560), '22-pop': ('22-pop', 1173),
     '21-receipt-addressee': ('21-receipt-addressee', 1500), '33-offline-banner': ('33-offline-banner', 300),
-    '41-okuri-board': ('41-okuri-board', 1560), '42-okuri-store': ('42-okuri-store', 2330, 'bottom'), '23-store-tip': ('23-store-tip', 1250), '24-tip-done': ('24-tip-done', 1480),
+    '41-okuri-board': ('41-okuri-board', 1560), '48-stand-store': ('48-stand-store', 1960), '42-okuri-store': ('42-okuri-store', 2330, 'bottom'), '23-store-tip': ('23-store-tip', 1250), '24-tip-done': ('24-tip-done', 1480),
 }
 
 def main():

@@ -45,6 +45,7 @@ export const fromQuantity = (h) => (h == null || h === '0x' ? 0n : BigInt(h));
 
 export const yenToWei = (yen) => BigInt(yen) * UNIT;
 /** A supporter's tip (応援) sent from a store page: carries LIMITS.tipMark below the yen. */
+export const isStandValue = (wei) => { try { return BigInt(wei) % UNIT === BigInt(LIMITS.standMark); } catch { return false; } };
 export const isOkuriValue = (wei) => { try { return BigInt(wei) % UNIT === BigInt(LIMITS.okuriMark); } catch { return false; } };
 /** A gift from a store page (a tip, or 恩送り with its own mark): never a sale. */
 export const isTipValue = (wei) => { try { return BigInt(wei) % UNIT === BigInt(LIMITS.tipMark) || isOkuriValue(wei); } catch { return false; } };

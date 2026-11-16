@@ -945,6 +945,63 @@ try {
   ok('refund: fully refunded, so no refund button is left', (await page.locator('.modal [data-a="refund"]').count()) === 0);
   await page.click('.modal [data-close]');
 
+  // ---- 置きQR: a standing QR for unattended sales ----
+  await page.goto(`${BASE}app.html#/settings?s=info`);
+  await page.reload();
+  await page.waitForSelector('#stand-box [data-act="stand-on"]');
+  await page.click('#stand-box [data-act="stand-on"]');
+  await page.waitForSelector('.modal [name="stax"]');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('.owner-sign');
+  await page.click('[data-o="local"]');
+  await page.waitForSelector('#stand-box .tip-state', { timeout: 10000 });
+  const standSet = await settingsOf(page);
+  ok('置きQR: on after the owner\'s wallet signature, with the tax rate chosen', standSet.stand === true && standSet.standTax === 8 && /Action: accept-stand/.test(standSet.standAtt.message));
+  await page.screenshot({ path: `${OUT}/47-stand-settings.png` });
+  const standPg = await cust.newPage();
+  watch(standPg, 'standing QR', errors);
+  await standPg.goto(new URL(storeHref, BASE).href);
+  await standPg.waitForSelector('.sp-stand', { timeout: 15000 });
+  await standPg.locator('.sp-add').first().click();
+  await standPg.locator('.sp-add').first().click();
+  const added = Number(await standPg.inputValue('[name="standYen"]'));
+  ok('置きQR store page: "pay here", and tapping menu items adds up the amount', added > 0 && added % 2 === 0 && !(await standPg.locator('[data-act="stand-go"]').isDisabled()));
+  await standPg.fill('[name="standYen"]', '300');
+  await standPg.screenshot({ path: `${OUT}/48-stand-store.png`, fullPage: true });
+  const standTx = '0x' + '51'.repeat(32);
+  addTransfer({ from: CUSTOMER, value: 300n * UNIT + BigInt(LIMITS.standMark), tx: standTx });
+  await standPg.addInitScript((tx) => { window.__txHash = tx; }, standTx);
+  await standPg.click('[data-act="stand-go"]');
+  await standPg.waitForSelector('.wallet-btn');
+  ok('置きQR payment page: an ordinary payment to the address the store\'s wallet signed', new URL(standPg.url()).searchParams.get('st') === '1' && (await standPg.textContent('.bill')).includes('300'));
+  await standPg.tap('.wallet-btn');
+  await standPg.waitForSelector('.pay-btn:not([disabled])');
+  await standPg.tap('.pay-btn');
+  ok('置きQR: paid, with a receipt like any payment', await seen(standPg, '.done-title', 20000));
+  const standSent = await standPg.evaluate(() => window.__sent);
+  ok('置きQR: sent to the store\'s wallet with the standing-QR mark', standSent && BigInt('0x' + standSent.data.slice(74)) === 300n * UNIT + BigInt(LIMITS.standMark)
+    && standSent.data.slice(34, 74).toLowerCase() === MERCHANT.slice(2).toLowerCase());
+  const forged = new URL(standPg.url());
+  forged.searchParams.set('to', CUSTOMER);
+  await standPg.goto(forged.href);
+  ok('置きQR: a link with another receiving address is refused', await seen(standPg, '.notice.error', 15000) && (await standPg.locator('.pay-btn, .wallet-btn').count()) === 0);
+  await standPg.close();
+  const standSale = async (amount) => (await salesLS()).find((x) => x.stand && x.amountYen === amount);
+  const nudge = async (fn) => { for (let i = 0; i < 16; i++) { await page.evaluate(() => dispatchEvent(new Event('online'))); await sleep(450); if (await fn()) return true; } return false; };
+  ok('置きQR: the register books the marked payment as a sale by itself, at the chosen tax rate', await nudge(async () => !!(await standSale(300)))
+    && (await standSale(300)).items[0].tax === 8 && (await standSale(300)).txHash === standTx);
+  addTransfer({ from: PAYER, value: 450n * UNIT, tx: '0x' + '52'.repeat(32) }); // typed by hand in a copy-and-send wallet
+  addTransfer({ from: PAYER, value: 120n * UNIT, tx: '0x' + '53'.repeat(32) });
+  addTransfer({ from: PAYER, value: 200n * UNIT + BigInt(LIMITS.tipMark), tx: '0x' + '54'.repeat(32) }); // a tip: never a sale
+  await page.goto(`${BASE}app.html#/sales`);
+  ok('置きQR: hand-typed whole-yen amounts wait for the store to confirm; a tip is not among them', await nudge(async () => (await page.locator('.stand-inbox .later-list li').count()) === 2));
+  await page.screenshot({ path: `${OUT}/49-stand-inbox.png` });
+  await page.locator('.stand-inbox li', { hasText: '450' }).locator('[data-act="stand-book"]').click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('reji:sales:v1')).some((x) => x.stand && x.amountYen === 450), null, { timeout: 15000 });
+  await page.locator('.stand-inbox li', { hasText: '120' }).locator('[data-act="stand-ignore"]').click();
+  await sleep(400);
+  ok('置きQR: "book as a sale" books it, "not a sale" dismisses it', (await page.locator('.stand-inbox').count()) === 0 && !(await standSale(120)) && (await page.locator('.row-stand').count()) >= 2);
+
   // ---- はじめてのJPYC: the guide a new customer reaches from the pages they land on ----
   const hj = await cust.newPage();
   watch(hj, 'first-time guide', errors);

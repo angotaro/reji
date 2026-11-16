@@ -19,20 +19,22 @@ function parse() {
   const q = new URLSearchParams(location.search);
   const okuri = q.get('tip') === '2'; // 恩送り: a gift to a store that lists itself, with its own on-chain mark
   const tip = okuri || q.get('tip') === '1'; // a supporter's tip (応援) from a store page, not a sale
+  const stand = !tip && q.get('st') === '1'; // typed on the store page from a standing QR (unattended sales)
   const to = q.get('to') || '';
   const chainId = Number(q.get('c'));
   const amountYen = Number(q.get('a'));
-  const suffix = okuri ? LIMITS.okuriMark : tip ? LIMITS.tipMark : q.get('u') == null ? 0 : Number(q.get('u'));
-  const exp = !tip && q.get('e') ? Number(q.get('e')) : 0;
+  const suffix = okuri ? LIMITS.okuriMark : tip ? LIMITS.tipMark : stand ? LIMITS.standMark : q.get('u') == null ? 0 : Number(q.get('u'));
+  const exp = stand ? Math.floor(Date.now() / 1000) + 20 * 60 : !tip && q.get('e') ? Number(q.get('e')) : 0;
   if (addressStatus(to) !== 'ok' || !CHAINS[chainId]) return null;
   if (!Number.isInteger(amountYen) || amountYen < (tip ? LIMITS.tipMin : 1) || amountYen > (tip ? LIMITS.tipMax : LIMITS.maxYen)) return null;
-  if (!tip && (!Number.isInteger(suffix) || suffix < 0 || suffix > LIMITS.suffixMax)) return null;
+  if (!tip && !stand && (!Number.isInteger(suffix) || suffix < 0 || suffix > LIMITS.suffixMax)) return null;
   if (!Number.isFinite(exp) || exp < 0) return null;
   const clean = (v, n) => String(v || '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n);
   const hex43 = (k) => (/^[A-Za-z0-9_-]{43}$/.test(q.get(k) || '') ? Array.from(b64urlDecode(q.get(k)), (x) => x.toString(16).padStart(2, '0')).join('') : '');
   return {
     tip,
     okuri,
+    stand,
     to: checksum(to),
     chainId,
     amountYen,
@@ -42,7 +44,7 @@ function parse() {
     no: tip ? '' : clean(q.get('r'), 40),
     desc: tip ? '' : clean(q.get('d'), 120),
     exp: exp ? exp * 1000 : 0,
-    channel: !tip && (chainId === 137 || chainId === 80002) && /^[0-9a-f]{32}$/.test(q.get('n') || '') && /^[A-Za-z0-9_-]{43}$/.test(q.get('k') || '') ? q.get('n') : '',
+    channel: !tip && !stand && (chainId === 137 || chainId === 80002) && /^[0-9a-f]{32}$/.test(q.get('n') || '') && /^[A-Za-z0-9_-]{43}$/.test(q.get('k') || '') ? q.get('n') : '',
     relayPub: tip ? '' : hex43('k'),
     brandPub: hex43('b'),
     brandColor: /^[0-9a-fA-F]{6}$/.test(q.get('bc') || '') ? '#' + q.get('bc').toUpperCase() : '',
@@ -64,11 +66,14 @@ if (req) applyBrandColor(document.documentElement, req.brandColor || S.brand?.co
 const tipOk = (b) => !!b?.tip && sameAddress(b.tip.to, req.to) && b.tip.chains.includes(req.chainId) && (!req.okuri || okuriActive(b)); // 恩送り only while the store lists itself
 /** The wording for a gift: 恩送り has its own. */
 const tk = (key, vars) => t(req?.okuri ? key.replace(/\.tip/, '.okuri') : key, vars);
-if (req?.tip) S.tipCheck = !req.brandPub ? 'bad' : tipOk(S.brand) ? 'ok' : 'checking';
+// A standing-QR payment goes through the same gate: only to the address the store's wallet signed for it.
+const gated = !!(req?.tip || req?.stand);
+const offerOk = (b) => (req.stand ? !!b?.stand && sameAddress(b.stand.to, req.to) && b.stand.chains.includes(req.chainId) : tipOk(b));
+if (gated) S.tipCheck = !req.brandPub ? 'bad' : offerOk(S.brand) ? 'ok' : 'checking';
 function loadBrand() {
   if (!req?.brandPub) return;
   fetchBrand(req.brandPub).then((b) => {
-    if (req.tip) S.tipCheck = b ? (tipOk(b) ? 'ok' : b.tip ? 'bad' : 'off') : S.tipCheck === 'ok' ? 'ok' : 'unknown';
+    if (gated) S.tipCheck = b ? (offerOk(b) ? 'ok' : (req.stand ? b.stand : b.tip) ? 'bad' : 'off') : S.tipCheck === 'ok' ? 'ok' : 'unknown';
     if (b && !req.tip && !addrOk(b)) {
       S.brand = null;
       S.brandBad = !!b.addr; // a different address: refuse. No address yet: just don't show the profile.
@@ -79,7 +84,7 @@ function loadBrand() {
     }
     render();
   }).catch(() => {
-    if (req.tip && S.tipCheck !== 'ok') S.tipCheck = 'unknown';
+    if (gated && S.tipCheck !== 'ok') S.tipCheck = 'unknown';
     render();
   });
 }
@@ -212,7 +217,7 @@ function otherWaysHtml() {
 function tipGateHtml() {
   if (S.tipCheck === 'checking') return html`<p class="working"><span class="spinner" aria-hidden="true"></span>${t('pay.tipChecking')}</p>`;
   if (S.tipCheck === 'unknown') return html`<div class="notice warn"><p>${t('pay.tipUnknown')}</p></div><button type="button" class="btn primary" data-act="tip-recheck">${t('pay.tipRetry')}</button>`;
-  return html`<div class="notice error"><p>${t(S.tipCheck === 'off' ? 'pay.tipOff' : 'pay.tipBad')}</p></div>
+  return html`<div class="notice error"><p>${t(req.stand ? (S.tipCheck === 'off' ? 'pay.standOff' : 'pay.standBad') : S.tipCheck === 'off' ? 'pay.tipOff' : 'pay.tipBad')}</p></div>
     ${req.brandPub ? html`<a class="btn ghost" href="${storePageUrl(req.brandPub)}">${icon('store')}<span>${t('pay.tipBack')}</span></a>` : ''}`;
 }
 
@@ -221,7 +226,7 @@ function panelHtml() {
     return html`<div class="notice error" role="alert"><p>${t('pay.brandBad')}</p></div>
       <a class="btn ghost" href="${storePageUrl(req.brandPub)}">${icon('store')}<span>${t('pay.brandBadStore')}</span></a>`;
   }
-  if (req?.tip && S.tipCheck !== 'ok' && !['invalid', 'done'].includes(S.phase)) return tipGateHtml();
+  if (gated && S.tipCheck !== 'ok' && !['invalid', 'done'].includes(S.phase)) return tipGateHtml();
   const name = S.wallet?.name || '';
   switch (S.phase) {
     case 'invalid':
@@ -382,7 +387,7 @@ async function pick(w) {
 }
 
 async function send() {
-  if (req.tip && S.tipCheck !== 'ok') return; // never send a tip that was not verified
+  if (gated && S.tipCheck !== 'ok') return; // never send a tip or a standing-QR payment that was not verified
   if (S.brandBad) return; // never pay through a link that borrows another store's profile
   if (expired()) {
     S.phase = 'expired';

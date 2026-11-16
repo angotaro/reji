@@ -14,6 +14,7 @@ import { icon, modal, confirmDialog, requirePin, printHtml, chainBadge } from '.
 import { recheckUnpaid, bookUnpaid, trackConfirmations, printSale, confText } from './charge.js';
 import { isLater, isOpenLater } from './latercore.js';
 import { showLaterQr, reissue, closeLater } from './later.js';
+import { standInbox, confirmInbox, ignoreInbox } from './stand.js';
 
 const RANGES = ['today', 'yesterday', '7d', 'month', 'all'];
 let range = 'today';
@@ -127,7 +128,7 @@ function renderBody() {
   const keepOpen = $('.z-items', root)?.open;
   const list = filtered();
   $('#sales-summary', root).innerHTML = String(summaryHtml(list, summarize(list)));
-  $('#sales-ledger', root).innerHTML = String(html`${laterHtml()}${unpaidHtml()}${ledgerHtml(list)}`);
+  $('#sales-ledger', root).innerHTML = String(html`${standInboxHtml()}${laterHtml()}${unpaidHtml()}${ledgerHtml(list)}`);
   if (keepOpen) $('.z-items', root).open = true;
 }
 
@@ -185,11 +186,26 @@ function rowHtml(s) {
   const st = s.flag === 'failed' ? 'bad' : s.confirmed ? 'ok' : 'wait';
   return html`<li><button type="button" class="row" data-act="open" data-id="${s.id}">
     <span class="row-time">${fmtTime(when(s))}</span>
-    <span class="row-main"><span class="row-desc">${s.desc || s.no}${refundState(s) !== 'none' ? html` <span class="row-refund">${t(refundState(s) === 'full' ? 'refund.badgeFull' : 'refund.badgePart')}</span>` : ''}</span><span class="row-no">${s.no}</span></span>
+    <span class="row-main"><span class="row-desc">${s.desc || s.no}${s.stand ? html` <span class="row-stand">${t('stand.badge')}</span>` : ''}${refundState(s) !== 'none' ? html` <span class="row-refund">${t(refundState(s) === 'full' ? 'refund.badgeFull' : 'refund.badgePart')}</span>` : ''}</span><span class="row-no">${s.no}</span></span>
     <span class="row-chain">${chainBadge(chainName(s.chainId), s.testnet)}</span>
     <span class="row-amt">${yen(s.amountYen)}</span>
     <span class="row-state" data-state="${st}" title="${confText(s)}">${st === 'ok' ? icon('check') : raw('<span class="mini-dot"></span>')}<span class="sr-only">${confText(s)}</span></span>
   </button></li>`;
+}
+
+// ---- 置きQR: whole-yen amounts typed by hand wait here for one tap ("this is a sale") ----
+function standInboxHtml() {
+  const list = standInbox();
+  if (!list.length) return '';
+  return html`<div class="later-box stand-inbox">
+    <h3 class="unpaid-head">${t('stand.inboxTitle', { n: list.length })}</h3>
+    <p class="unpaid-text">${t('stand.inboxText')}</p>
+    <ul class="later-list">${list.map((x) => html`<li>
+      <div class="ll-main"><b>${yen(x.amountYen)}</b><span class="ll-no">${chainName(x.chainId)}</span><span class="ll-no">${shortAddr(x.from)}</span></div>
+      <div class="ll-sub"><span>${t('stand.seen', { date: fmtDateTime(x.seenAt) })}</span><a href="${explorerTx(x.chainId, x.txHash)}" target="_blank" rel="noopener noreferrer">${t('sales.explorer')}</a></div>
+      <div class="ll-actions"><button type="button" class="btn small primary" data-act="stand-book" data-key="${x.key}">${t('stand.book')}</button>
+        <button type="button" class="btn small ghost" data-act="stand-ignore" data-key="${x.key}">${t('stand.ignore')}</button></div></li>`)}</ul>
+  </div>`;
 }
 
 // ---- pay later (後払い): what is still owed, and what the store closed ----
@@ -274,6 +290,10 @@ async function onClick(e) {
   else if (act === 'csv-sales') exportDialog();
   else if (act === 'csv-items') exportItems();
   else if (act === 'recheck') recheck(b.dataset.id, b);
+  else if (act === 'stand-book') {
+    b.disabled = true;
+    confirmInbox(b.dataset.key).then((sale) => { if (sale) toast(t('stand.booked', { amount: yen(sale.amountYen) })); renderBody(); }).catch(() => { toast(t('stand.bookFailed'), 'error'); renderBody(); });
+  } else if (act === 'stand-ignore') { ignoreInbox(b.dataset.key); renderBody(); }
   else if (act === 'later-qr') { const u = state.unpaid.find((x) => x.id === b.dataset.id); if (u) showLaterQr(u); }
   else if (act === 'later-reissue') { const u = reissue(b.dataset.id); if (u) showLaterQr(u); }
   else if (act === 'later-settle') laterClose(b.dataset.id, 'settled');

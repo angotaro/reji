@@ -26,6 +26,8 @@ let mine = [];
 let tipYen = 0;
 let tipChain = 0;
 let tipOpen = false;
+let standYen = 0; // 置きQR: the amount the customer typed (or tapped together from the menu)
+let standChain = 0;
 let okuriSeen = false;
 let logoShown = false; // the logo fades in once
 let menuOpen = false;
@@ -43,7 +45,7 @@ function menuHtml() {
   }
   return html`<section class="sp-menu">
     <h2 class="panel-title">${t('sp.menu')}<small>${t(m.tax === 'excl' ? 'sp.menuExcl' : 'sp.menuIncl')}</small></h2>
-    ${groups.map((g) => html`${g.cat ? html`<h3 class="sp-cat">${g.cat}</h3>` : ''}<ul class="sp-items">${g.items.map((it) => html`<li><span class="sp-name">${it.n}</span><span class="sp-lead" aria-hidden="true"></span><span class="sp-price">${yen(it.p)}</span></li>`)}</ul>`)}
+    ${groups.map((g) => html`${g.cat ? html`<h3 class="sp-cat">${g.cat}</h3>` : ''}<ul class="sp-items">${g.items.map((it) => html`<li><span class="sp-name">${it.n}</span><span class="sp-lead" aria-hidden="true"></span><span class="sp-price">${yen(it.p)}</span>${profile.stand ? html`<button type="button" class="btn quiet small sp-add" data-act="stand-add" data-p="${it.p}" aria-label="${t('sp.standAdd', { name: it.n })}">＋</button>` : ''}</li>`)}</ul>`)}
     ${m.items.length > limit ? html`<button type="button" class="btn quiet sp-more" data-act="menu-all">${t('sp.menuAll', { n: m.items.length })}</button>` : ''}
   </section>`;
 }
@@ -107,6 +109,24 @@ function okuriHtml() {
       </ul>
       <p class="fine">${t('sp.okuriJudge')}</p>
     </div>`;
+}
+
+// ---- 置きQR (unattended sales): the customer types the amount and pays the address the store's wallet signed ----
+const okStand = (n) => Number.isInteger(n) && n >= 1 && n <= LIMITS.maxYen;
+function standHtml() {
+  const st = profile?.stand;
+  if (!st) return '';
+  if (!st.chains.includes(standChain)) standChain = st.chains[0];
+  return html`<section class="sp-stand" id="stand">
+    <h2 class="panel-title">${t('sp.standTitle')}</h2>
+    <p class="sp-tip-lead">${t(profile.menu?.items?.length ? 'sp.standLeadMenu' : 'sp.standLead')}</p>
+    <label class="field"><span class="label sub">${t('sp.standAmount')}</span>
+      <span class="tip-input"><input name="standYen" type="text" inputmode="numeric" maxlength="7" autocomplete="off" value="${standYen || ''}" placeholder="0"><span>${t('sp.tipYen')}</span></span></label>
+    ${standYen ? html`<button type="button" class="btn quiet small stand-clear" data-act="stand-clear">${t('sp.standClear')}</button>` : ''}
+    ${st.chains.length > 1 ? html`<label class="field"><span class="label sub">${t('sp.tipNet')}</span><select name="standChain">${st.chains.map((c) => html`<option value="${c}"${attr('selected', c === standChain)}>${chainName(c)}</option>`)}</select></label>` : ''}
+    <button type="button" class="btn primary big stand-go" data-act="stand-go"${attr('disabled', !okStand(standYen))}>${okStand(standYen) ? t('sp.standGo', { amount: yen(standYen) }) : t('sp.standGoNone')}</button>
+    <p class="fine">${t('sp.standFine')}</p>
+  </section>`;
 }
 
 function tipHtml() {
@@ -178,6 +198,7 @@ function render() {
       ${phase === 'loading' && !profile ? html`<p class="working"><span class="spinner" aria-hidden="true"></span>${t('sp.loading')}</p>` : ''}
       ${phase === 'missing' && !profile ? html`<div class="notice warn"><p>${t('sp.missing')}</p></div><button type="button" class="btn primary" data-act="retry">${t('sp.retry')}</button>` : ''}
       ${profile ? html`${storeCard(profile)}
+        ${standHtml()}
         <p class="sp-note">${t('sp.note')}</p>
         ${menuHtml()}
         <div class="btn-row sp-actions">
@@ -255,6 +276,25 @@ app.addEventListener('click', async (e) => {
     case 'okuri-count':
       countOkuri(b);
       break;
+    case 'stand-add':
+      standYen = Math.min(LIMITS.maxYen, standYen + Number(b.dataset.p || 0));
+      render();
+      document.getElementById('stand')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      break;
+    case 'stand-clear':
+      standYen = 0;
+      render();
+      break;
+    case 'stand-go': {
+      const st = profile?.stand;
+      if (!st || !okStand(standYen)) return;
+      const u = new URL('pay.html', location.href);
+      u.hash = '';
+      u.search = new URLSearchParams({ st: '1', to: st.to, c: String(standChain), a: String(standYen), s: profile.name || '', d: t('sp.standItem'),
+        b: b64urlEncode(Uint8Array.from(pub.match(/../g), (h) => parseInt(h, 16))), ...(profile.color ? { bc: profile.color.slice(1) } : {}) }).toString();
+      location.href = u.toString();
+      break;
+    }
     case 'tip-go': {
       const tip = profile?.tip;
       if (!tip || !okTip(tipYen)) return;
@@ -274,6 +314,14 @@ app.addEventListener('click', async (e) => {
   }
 });
 app.addEventListener('input', (e) => {
+  if (e.target.name === 'standYen') {
+    const d = e.target.value.replace(/[０-９]/g, (x) => String.fromCharCode(x.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '');
+    if (d !== e.target.value) e.target.value = d;
+    standYen = d ? Number(d) : 0;
+    const go = app.querySelector('[data-act="stand-go"]');
+    if (go) { go.disabled = !okStand(standYen); go.textContent = okStand(standYen) ? t('sp.standGo', { amount: yen(standYen) }) : t('sp.standGoNone'); }
+    return;
+  }
   if (e.target.name !== 'tipYen') return;
   const digits = e.target.value.replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, ''); // 全角 digits are fine too
   if (digits !== e.target.value) e.target.value = digits;
@@ -281,7 +329,7 @@ app.addEventListener('input', (e) => {
   tipOpen = true;
   tipUi();
 });
-app.addEventListener('change', (e) => { if (e.target.name === 'tipChain') tipChain = Number(e.target.value); });
+app.addEventListener('change', (e) => { if (e.target.name === 'tipChain') tipChain = Number(e.target.value); if (e.target.name === 'standChain') standChain = Number(e.target.value); });
 app.addEventListener('toggle', (e) => { if (e.target.classList?.contains('sp-tip')) tipOpen = e.target.open; }, true);
 window.addEventListener('hashchange', load);
 load();

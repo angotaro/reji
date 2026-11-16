@@ -2,7 +2,7 @@
 import { html, raw, $, $$, uid, toast, download, store, attr, fmtInt, clamp, ymd, shortAddr, copyText, forQr, riskyHost } from './util.js';
 import { t, getLang, setLang, fmtDateTime, fmtDay } from './i18n.js';
 import { brandFields, brandPreview, readBrand, bindBrandFields } from './brandui.js';
-import { hasBrand, publishBrand, brandSent, brandKeyForBackup, restoreBrandKey, brandPub, brandProfile, storePageUrl, ensureBrandKey, tipCode, tipOffer, okuriOffer } from './brand.js';
+import { hasBrand, publishBrand, brandSent, brandKeyForBackup, restoreBrandKey, brandPub, brandProfile, storePageUrl, ensureBrandKey, tipCode, tipOffer, okuriOffer, standOffer } from './brand.js';
 import { OKURI } from './config.js';
 import { storeCard } from './storecard.js';
 import { installCard } from './install.js';
@@ -161,6 +161,7 @@ const infoSec = (s) => {
     ${tipOffer(s) ? okuriSetHtml(s) : ''}
     <small class="hint">${t('tips.notes')}</small>
   </div>
+  ${standSetHtml(s)}
   <div class="info-box">
     <h3>${t('info.idsTitle')}</h3>
     <dl class="kv id-list">
@@ -345,6 +346,33 @@ async function addRpc(btn) {
   rerenderSection('nodes');
   say(t('rpc.added', { chains: [...new Set(good.map((r) => chainName(r.chainId)))].join(t('common.sep')) }), 'ok');
   fillRpc();
+}
+
+// ---- 置きQR: a printed QR for unattended sales; customers type the amount on the store page ----
+function standSetHtml(s) {
+  const on = !!standOffer(s);
+  return html`<div class="tip-box stand-box" id="stand-box">
+    <h3>${t('stand.title')}</h3>
+    <p class="hint">${t('stand.lead')}</p>
+    ${on ? html`<p class="tip-state">${icon('check')}<span>${t('stand.onState', { tax: t(s.standTax ? 'stand.taxN' : 'stand.tax0', { n: s.standTax }) })}</span></p>
+        <div class="btn-row"><button type="button" class="btn ghost" data-act="stand-pop">${icon('print')}<span>${t('stand.print')}</span></button>
+          <button type="button" class="btn quiet" data-act="stand-off">${t('stand.off')}</button></div>`
+      : !s.address ? html`<p class="hint">${t('tips.needAddr')}</p>`
+      : html`<button type="button" class="btn ghost" data-act="stand-on">${icon('lock')}<span>${t('stand.on')}</span></button>`}
+    <small class="hint">${t('stand.notes')}</small>
+  </div>`;
+}
+function standTaxDialog() {
+  const m = modal(html`<h2 class="modal-title">${t('stand.title')}</h2>
+    <p class="modal-text">${t('stand.taxLead')}</p>
+    <fieldset class="field"><legend class="label">${t('stand.taxLabel')}</legend>
+      <label class="check"><input type="radio" name="stax" value="8" checked><span>${t('stand.tax8')}</span></label>
+      <label class="check"><input type="radio" name="stax" value="10"><span>${t('stand.tax10')}</span></label>
+      <label class="check"><input type="radio" name="stax" value="0"><span>${t('stand.tax0')}</span></label></fieldset>
+    <div class="modal-actions"><button type="button" class="btn ghost" data-close>${t('common.cancel')}</button>
+      <button type="button" class="btn primary" data-ok>${t('stand.next')}</button></div>`, { label: t('stand.title'), size: 'small' });
+  m.el.querySelector('[data-ok]').addEventListener('click', () => m.close({ tax: Number(m.el.querySelector('[name="stax"]:checked')?.value ?? 8) }));
+  return m.result.then((v) => (v && typeof v === 'object' ? v.tax : null));
 }
 
 // ---- 恩送り: a store that welcomes support lists itself on the public board for a while ----
@@ -706,6 +734,34 @@ async function onClick(e) {
       publishBrand(state.settings, { force: true }).catch(() => {});
       toast(t('tips.onToast'));
       rerenderSection('info');
+      break;
+    }
+    case 'stand-on': {
+      if (dirty) { toast(t('info.saveFirstShort'), 'warn'); break; }
+      const s = state.settings;
+      if (!s.address) break;
+      const tax = await standTaxDialog();
+      if (tax == null) break;
+      const key = await ensureBrandKey();
+      const r = await ownerSign('accept-stand', s.address, { code: tipCode(key.pub) });
+      if (!r) break;
+      saveSettings({ ...state.settings, stand: true, standTax: tax, standSince: Date.now(), standAtt: { wallet: s.address, code: tipCode(key.pub), message: r.message, signature: r.signature, at: Date.now() } });
+      publishBrand(state.settings, { force: true }).catch(() => {});
+      toast(t('stand.onToast'));
+      rerenderSection('info');
+      break;
+    }
+    case 'stand-off':
+      if (!(await confirmDialog({ title: t('stand.offTitle'), body: t('stand.offBody'), ok: t('stand.off') }))) break;
+      saveSettings({ ...state.settings, stand: false, standAtt: null });
+      publishBrand(state.settings, { force: true }).catch(() => {});
+      toast(t('stand.offToast'));
+      rerenderSection('info');
+      break;
+    case 'stand-pop': {
+      const s = state.settings;
+      const { popHtml } = await import('./pop.js');
+      printHtml(popHtml(s, { pageUrl: pageUrlOf(s), stand: true }), { width: '96mm', kind: 'pop' });
       break;
     }
     case 'okuri-on': {
