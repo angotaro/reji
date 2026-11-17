@@ -10,6 +10,7 @@ import { receiptUrl, sanitizeReceipt } from './receipt.js';
 import { icon, stampSvg } from './ui.js';
 import { applyBrandColor, cachedBrand, fetchBrand, eventLine, storePageUrl, okuriActive } from './brand.js';
 import { storeCard } from './storecard.js';
+import { STAMP, stampable, cardState, stampRec } from './stampcore.js';
 
 const RKEY = 'reji:receipts:v1';
 const TKEY = 'reji:tips:v1'; // tips this phone sent
@@ -310,6 +311,7 @@ function panelHtml() {
         ${S.brand?.msg ? html`<p class="store-msg">${S.brand.msg}</p>` : ''}
         <a class="btn primary big" href="${S.receiptLink || 'receipt.html'}">${icon('receipt')}<span>${t('pay.viewReceipt')}</span></a>
         <p class="fine">${t('pay.savedHint')}</p>
+        ${S.stamp ? html`<a class="stamp-line" href="${storePageUrl(req.brandPub)}">${icon('check')}<span>${S.stamp.full ? t('pay.stampFull', { gift: S.stamp.gift }) : t('pay.stampLine', { have: S.stamp.have, n: S.stamp.n, k: S.stamp.n - S.stamp.have, gift: S.stamp.gift })}</span></a>` : ''}
         ${S.brand ? html`<div class="done-store">${storeCard(S.brand, { name: req.store, compact: true })}<a class="btn ghost store-page" href="${storePageUrl(req.brandPub)}">${icon('store')}<span>${t('sc.openPage')}</span></a></div>` : ''}
         <div class="btn-row">
           <a class="btn quiet" href="${explorerTx(req.chainId, S.tx)}" target="_blank" rel="noopener noreferrer">${icon('external')}<span>${t('pay.viewTx')}</span></a>
@@ -588,6 +590,22 @@ async function waitAndFinish(verify = false) {
   render();
 }
 
+/** スタンプカード: this payment was just confirmed here, so it is a checked stamp at once. Returns where the card stands. */
+function stampAfter(id) {
+  const card = S.brand?.stamp;
+  if (!card || !addrOk(S.brand)) return null;
+  const all = store.get(STAMP.key, {});
+  const o = all && typeof all === 'object' && !Array.isArray(all) ? all : {};
+  const rec = stampRec(o, req.brandPub);
+  const list = stampable((store.get(RKEY, []) || []).map((x) => x?.r), req.brandPub, card);
+  if (list.some((x) => x.id === id) && !rec.ok.includes(id)) {
+    rec.ok.push(id);
+    store.set(STAMP.key, { ...o, [req.brandPub]: rec });
+  }
+  if (!list.some((x) => x.id === id)) return null; // below the store's minimum: no stamp for this one
+  const st = cardState(list, rec, card.n);
+  return { have: Math.min(st.have, card.n), n: card.n, gift: card.gift, full: st.full };
+}
 async function finish() {
   S.paidAt = Date.now();
   if (req.tip) { // no 領収書 for a gift: keep a small record on this phone instead
@@ -605,6 +623,7 @@ async function finish() {
   const list = store.get(RKEY, []);
   const prev = Array.isArray(list) ? list.filter((x) => x && x.id !== id) : [];
   store.set(RKEY, [{ id, savedAt: S.paidAt, r }, ...prev].slice(0, 300));
+  try { S.stamp = stampAfter(id); } catch { S.stamp = null; }
   try { S.receiptLink = await receiptUrl(r); } catch { S.receiptLink = 'receipt.html'; }
   S.phase = 'done';
   S.pool?.close();

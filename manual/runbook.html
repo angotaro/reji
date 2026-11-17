@@ -85,6 +85,7 @@
   .two.w74 img { max-height: 98mm; width: auto; max-width: 100%; }
   .two.w70 img { width: 70%; margin: 0 auto; }
   .two.w64 img { width: auto; max-height: 82mm; max-width: 100%; margin: 0 auto; }
+  .two.stampfig img { max-height: 50mm !important; }
   .two.w56 img { width: auto; max-height: 66mm; max-width: 100%; margin: 0 auto; }
   .shots figure.phone img { max-height: 112mm; width: auto; max-width: 100%; margin: 0 auto; }
   .two.tall img { max-height: 119mm; width: auto; max-width: 100%; margin: 0 auto; }
@@ -139,7 +140,7 @@
     <li><span class="n">7</span>困ったとき<span class="d">トラブル対応、返金、オフライン・非常時（後払い）</span></li>
     <li><span class="n">8</span>売上画面<span class="d">集計・レシート再発行・CSV</span></li>
     <li><span class="n">9</span>閉店作業<span class="d">チェックリスト、別の端末への引き継ぎ</span></li>
-    <li><span class="n">10</span>店長・管理者向け：設定と店主確認<span class="d">各設定項目、はじめての設定、お店の見た目とお店のページ、応援（投げ銭）、置きQR（無人販売）、恩送り、ウォレットでの署名</span></li>
+    <li><span class="n">10</span>店長・管理者向け：設定と店主確認<span class="d">各設定項目、はじめての設定、お店の見た目とお店のページ、応援（投げ銭）、置きQR（無人販売）、スタンプカード、恩送り、ウォレットでの署名</span></li>
     <li><span class="n">11</span>手数料なし決済（ガスレス）<span class="d">お店のガス用ウォレットの作成と管理、ガス用ウォレットQ&amp;A</span></li>
     <li><span class="n">12</span>セキュリティのルール<span class="d">必ず守ること</span></li>
     <li><span class="n">13</span>用語集</li>
@@ -635,6 +636,34 @@
     </div>
   </div>
   <div class="box must"><span class="t">QRコードを、ときどき確かめる</span><p>置いたQRコードの上に、別のQRコードのシールを貼られると、お客様は別の人に払ってしまいます。売り場に行ったときは、QRコードが自分のものか（読み取って、自分のお店のページが開くか）を確かめてください。お客様の端末は、受取先がお店のウォレットの署名で確かめられたものかを確認しますが、貼り替えられたQRコードそのものは見分けられません。</p></div>
+</section>
+
+<section class="chapter">
+  <h1><span class="no">10</span>スタンプカード</h1>
+  <p class="lead">JPYCで払ってくれたお客様に、スタンプがたまるカードを出せます。数えるのはお客様のスマホで、そこに保存してあるレシートから数えます。会員登録も、お客様の情報を集めることもありません。</p>
+  <div class="two w56 stampfig">
+    <figure><img src="img/55-stamp-only.jpg"><figcaption>お店のページのスタンプカード。たまると「特典を使う（お店で）」が出ます。</figcaption></figure>
+    <figure><img src="img/53-stamp-use.jpg"><figcaption>特典の画面。時計が動いているので、いま開いた画面だとわかります。</figcaption></figure>
+  </div>
+  <h2>はじめるには</h2>
+  <ol>
+    <li>「設定」→「このお店の情報」→「スタンプカード」で「スタンプカードを使う」にチェックを入れます。</li>
+    <li>特典（例：コーヒー1杯サービス）と、スタンプの数（2〜30）を入れます。「何円以上の会計で1個」は、空欄ならすべての会計が対象です。</li>
+    <li>「変更を保存」を押します。お店のページにカードが出ます。</li>
+  </ol>
+  <h2>スタンプのたまり方</h2>
+  <ul>
+    <li>1回の会計でスタンプ1個。数えるのは、カードを始めた日からあとの会計です。応援は数えません。</li>
+    <li>お客様のスマホが、レシートのお支払いをブロックチェーンで確かめます。お店のウォレットに届いていないお支払いは、スタンプになりません。</li>
+    <li>お支払いが終わった画面にも、「スタンプ 3 / 10」のように、いまの数が出ます。</li>
+  </ul>
+  <h2>特典を渡すとき（スタッフ）</h2>
+  <ol>
+    <li>お客様に、お店のページの「特典を使う（お店で）」を押してもらい、画面を見せてもらいます。</li>
+    <li>お店の名前と特典、動いている時計を確かめます。</li>
+    <li>目の前で「使用済みにする」を押してもらい、「使用済み」の表示を見てから特典を渡します。</li>
+  </ol>
+  <div class="box note"><span class="t">知っておくこと</span><p>スタンプはお客様のスマホ（そのブラウザ）の中にあり、レジには記録が残りません。ブラウザのデータを消すと、スタンプも消えます。レシートのリンクを人に渡すと、その人のスマホでもスタンプになります。紙のスタンプカードと同じ気軽さのしくみなので、高額の特典には向きません。気になるときは、特典の画面の「使うスタンプのレシート番号」を「売上」で検索できます。</p></div>
 </section>
 
 <section class="chapter">

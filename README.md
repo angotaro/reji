@@ -119,6 +119,12 @@ A printed QR opens the store page, where a "pay here" section lets the customer 
 
 A sticker pasted over the printed QR cannot be detected by software; the manual tells stores to check their sign.
 
+### Stamp card (スタンプカード)
+
+A store can offer a stamp card with no accounts and no customer data. The rule (stamps needed, the reward, an optional minimum sale, the start date) is published in the store's profile. The customer's phone counts its own saved receipts from that store: one stamp per payment, since the card began, at or above the minimum. Before a receipt counts, the phone looks the payment up on the blockchain and checks it reached the store's address for that amount, so a made-up receipt is no stamp. The store page shows the card; the payment-complete screen shows where it stands. To use a reward the customer opens a screen with the store, the reward and a running clock, and presses "mark as used" in front of the staff; those stamps are spent on that phone for good. The logic is `assets/js/stampcore.js`.
+
+Limits, stated in the manual: stamps live in that browser's storage (clearing it loses them, and a wallet's in-app browser and the phone's own browser keep separate cards); a receipt link passed to a friend is a stamp on the friend's phone too; the register keeps no record of rewards. It is as casual as a paper stamp card and not meant for high-value rewards.
+
 ### Refunds
 
 Reji never moves money, so a refund is sent by the owner from the store's own wallet. 「返金する」 on a sale (PIN-protected) asks for the amount, in full or in part, then shows the payer's address and the amount to send. While that window is open, and again whenever the sale is reopened, Reji scans transfers to the payer and records the one sent from the store's receiving address for that amount, after the refund was started. A transaction ID can be entered instead. Refunds appear on the sale, as a badge in the list, in the summary (with the net) in the plain CSV, and in the accounting layouts as a sales return dated the day of the refund (split across the sale's tax rates in proportion, with each product's return category). The matching rule is `findRefund` in `assets/js/refund.js`.
@@ -204,9 +210,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (70)
+node --test                        # unit tests (72)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (207 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (216 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/clean-urls.mjs          # the deployed copy's addresses without .html

@@ -162,6 +162,7 @@ const infoSec = (s) => {
     <small class="hint">${t('tips.notes')}</small>
   </div>
   ${standSetHtml(s)}
+  ${stampSetHtml(s)}
   <div class="info-box">
     <h3>${t('info.idsTitle')}</h3>
     <dl class="kv id-list">
@@ -346,6 +347,23 @@ async function addRpc(btn) {
   rerenderSection('nodes');
   say(t('rpc.added', { chains: [...new Set(good.map((r) => chainName(r.chainId)))].join(t('common.sep')) }), 'ok');
   fillRpc();
+}
+
+// ---- スタンプカード: the rule is published in the profile; customers' phones count their own receipts ----
+function stampSetHtml(s) {
+  return html`<div class="info-box stamp-box" id="stamp-box">
+    <h3>${t('stamp.title')}<small class="opt">${t('tips.optional')}</small></h3>
+    <p class="hint">${t('stamp.lead')}</p>
+    <label class="check"><input type="checkbox" name="stampOn"${attr('checked', s.stampOn)}><span>${t('stamp.on')}</span></label>
+    <div class="stamp-fields">
+      <label class="field"><span class="label sub">${t('stamp.gift')}</span><input name="stampGift" value="${s.stampGift}" maxlength="40" placeholder="${t('stamp.giftPh')}"><small class="field-error" data-err="stampGift"></small></label>
+      <div class="field-row">
+        <label class="field"><span class="label sub">${t('stamp.n')}</span><input name="stampN" type="text" inputmode="numeric" maxlength="2" value="${s.stampN}"></label>
+        <label class="field"><span class="label sub">${t('stamp.min')}</span><input name="stampMin" type="text" inputmode="numeric" maxlength="7" value="${s.stampMin || ''}" placeholder="0"></label>
+      </div>
+    </div>
+    <small class="hint">${t('stamp.notes')}</small>
+  </div>`;
 }
 
 // ---- 置きQR: a printed QR for unattended sales; customers type the amount on the store page ----
@@ -606,6 +624,14 @@ function readForm(form) {
   }
   for (const [k, n] of [['tagline', 40], ['people', 40], ['eventName', 40], ['eventSpace', 20]]) if (form.querySelector(`[name="${k}"]`)) next[k] = get(k).replace(/[\u0000-\u001f]/g, '').slice(0, n);
   if (form.querySelector('[name="showMenu"]')) next.showMenu = fd.get('showMenu') === 'on';
+  if (form.querySelector('[name="stampGift"]')) {
+    next.stampGift = get('stampGift').replace(/[\u0000-\u001f]/g, '').slice(0, 40);
+    next.stampN = clamp(parseInt(toHalfWidth(get('stampN')), 10) || 10, 2, 30);
+    next.stampMin = clamp(parseInt(toHalfWidth(get('stampMin')), 10) || 0, 0, 1_000_000);
+    next.stampOn = fd.get('stampOn') === 'on';
+    if (next.stampOn && !next.stampGift) errors.stampGift = t('stamp.needGift');
+    if (next.stampOn && !state.settings.stampOn) next.stampSince = Date.now(); // the card counts from the day it is turned on
+  }
   if (form.querySelector('[name="about"]')) next.about = String(fd.get('about') ?? '').replace(/\r\n?/g, '\n').trim().slice(0, 300);
   const term = toHalfWidth(get('terminal'));
   if (!/^[A-Za-z0-9]{0,4}$/.test(term)) errors.terminal = t('err.terminal');
@@ -637,7 +663,7 @@ async function save(form) {
     next.owner = null;
     addressChanged = true;
   }
-  const brandChanged = ['logo', 'brandColor', 'storeLink', 'footer', 'storeName', 'address', 'showMenu', 'tagline', 'people', 'about', 'eventName', 'eventSpace'].some((k) => next[k] !== state.settings[k])
+  const brandChanged = ['logo', 'brandColor', 'storeLink', 'footer', 'storeName', 'address', 'showMenu', 'tagline', 'people', 'about', 'eventName', 'eventSpace', 'stampOn', 'stampN', 'stampGift', 'stampMin'].some((k) => next[k] !== state.settings[k])
     || JSON.stringify(next.links) !== JSON.stringify(state.settings.links);
   saveSettings(next);
   state.products = normalizeProducts(products);

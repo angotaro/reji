@@ -515,3 +515,48 @@ test('置きQR: the printed sign says "pay here" and carries the store page\'s Q
   const sign = String(popHtml({ storeName: '直売所', chains: [137] }, { pageUrl: 'https://example.com/store#p=abc', stand: true }));
   assert.ok(/ここで払えます|Pay here/.test(sign) && sign.includes('<svg') && !/JPYC払い OK|JPYC accepted/.test(sign)); // whichever language an earlier test left on
 });
+
+import { cleanStamp, stampOffer, stampable, cardState, stampRec } from '../assets/js/stampcore.js';
+test('スタンプカード: the rule needs a reward and a sensible count; junk from a relay is dropped', () => {
+  assert.deepEqual(cleanStamp({ n: 10, gift: ' コーヒー1杯 ', min: 500, since: 1000 }), { n: 10, gift: 'コーヒー1杯', min: 500, since: 1000 });
+  assert.equal(cleanStamp({ n: 10, gift: '' }), null);
+  assert.equal(cleanStamp({ n: 1, gift: 'x' }), null);
+  assert.equal(cleanStamp({ n: 31, gift: 'x' }), null);
+  assert.equal(cleanStamp('x'), null);
+  assert.equal(cleanStamp({ n: 5, gift: 'x', min: -3, since: 'abc' }).min, 0);
+  assert.equal(stampOffer({ stampOn: false, stampN: 5, stampGift: 'x' }), null);
+  assert.equal(stampOffer({ stampOn: true, stampN: 5, stampGift: 'x', stampMin: 0, stampSince: 7 }).since, 7);
+  assert.equal(brandProfile({ storeName: 'S', stampOn: true, stampN: 5, stampGift: 'おまけ' }).stamp.gift, 'おまけ');
+  assert.equal(brandProfile({ storeName: 'S', stampOn: false, stampN: 5, stampGift: 'おまけ' }).stamp, undefined);
+  assert.equal(parseBrand({ name: 'S', stamp: { n: 5, gift: 'おまけ' } }).stamp.n, 5);
+  assert.equal(parseBrand({ name: 'S', stamp: { n: 500, gift: 'おまけ' } }).stamp, null);
+});
+test('スタンプカード: one stamp per on-chain payment to this store, since the card began, at least the minimum', () => {
+  const pub = 'a'.repeat(64);
+  const tx = (c) => '0x' + c.repeat(64);
+  const card = { n: 3, gift: 'x', min: 300, since: 1_000_000 };
+  const rs = [
+    { b: pub, tx: tx('1'), c: 137, a: 500, t: 2000, n: 'A-1' },
+    { b: pub, tx: tx('1').toUpperCase().replace('0X', '0x'), c: 137, a: 500, t: 2000, n: 'A-1' }, // the same payment saved twice
+    { b: pub, tx: tx('2'), c: 137, a: 299, t: 2100 }, // below the minimum
+    { b: pub, tx: tx('3'), c: 137, a: 300, t: 999 }, // before the card began
+    { b: 'b'.repeat(64), tx: tx('4'), c: 137, a: 900, t: 2200 }, // another store
+    { b: pub, tx: '', c: 137, a: 900, t: 2300 }, // no payment behind it
+    { b: pub, tx: tx('5'), c: 137, a: 800, t: 1500 },
+    { b: pub, tx: tx('6'), c: 137, a: 300, t: 1000 },
+    { b: pub, tx: tx('7'), c: 137, a: 300, t: 3000 },
+  ];
+  const list = stampable(rs, pub, card);
+  assert.deepEqual(list.map((x) => x.id), [tx('6'), tx('5'), tx('1'), tx('7')]);
+  assert.deepEqual(stampable(rs, pub, null), []);
+  // unchecked receipts are not stamps; ones that failed the check never are
+  let st = cardState(list, { ok: [tx('6'), tx('5')], bad: [tx('1')] }, 3);
+  assert.deepEqual([st.have, st.pending, st.full], [2, 1, false]);
+  st = cardState(list, { ok: [tx('6'), tx('5'), tx('1'), tx('7')] }, 3);
+  assert.deepEqual([st.have, st.full, st.next.map((x) => x.id)], [4, true, [tx('6'), tx('5'), tx('1')]]);
+  // a reward uses the oldest stamps; the rest carry over and cannot be used twice
+  st = cardState(list, { ok: [tx('6'), tx('5'), tx('1'), tx('7')], used: st.next.map((x) => x.id) }, 3);
+  assert.deepEqual([st.have, st.full], [1, false]);
+  assert.deepEqual(stampRec({ [pub]: { ok: [tx('1'), 'junk', 5], used: 'x', log: [{ t: 5 }, null] } }, pub), { ok: [tx('1')], bad: [], used: [], log: [{ t: 5 }] });
+  assert.deepEqual(stampRec(null, pub), { ok: [], bad: [], used: [], log: [] });
+});

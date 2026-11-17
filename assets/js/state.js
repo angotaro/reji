@@ -43,6 +43,11 @@ export const DEFAULT_SETTINGS = {
   standAtt: null,
   standTax: 8,
   standSince: 0,
+  stampOn: false, // スタンプカード on the store page, counted on customers' phones from their receipts
+  stampN: 10, // stamps for one reward
+  stampGift: '', // the reward, in the store's words
+  stampMin: 0, // a sale of at least this many yen earns a stamp (0 = every sale)
+  stampSince: 0, // when the card began: earlier receipts are not stamps
   tipAtt: null, // the receiving wallet's signature agreeing to that, bound to the profile key
   terminal: '', // optional receipt-number prefix when running several registers
   expiryMin: 15,
@@ -115,6 +120,11 @@ export function normalizeSettings(s) {
   o.stand = !!o.stand && !!o.standAtt;
   o.standTax = [10, 8, 0].includes(Number(o.standTax)) ? Number(o.standTax) : 8;
   o.standSince = Number(o.standSince) || 0;
+  o.stampN = Math.min(30, Math.max(2, Math.trunc(Number(o.stampN)) || 10));
+  o.stampGift = line(o.stampGift, 40).trim();
+  o.stampMin = Math.min(1_000_000, Math.max(0, Math.trunc(Number(o.stampMin)) || 0));
+  o.stampSince = Number(o.stampSince) || 0;
+  o.stampOn = !!o.stampOn && !!o.stampGift;
   const k = o.okuri;
   o.okuri = o.tips && k && typeof k === 'object' && k.on === true && Number.isFinite(Number(k.until)) && Number.isFinite(Number(k.since))
     ? { on: true, cat: k.cat === 'disaster' ? 'disaster' : 'other', msg: String(k.msg || '').slice(0, 80), area: String(k.area || '').slice(0, 20),

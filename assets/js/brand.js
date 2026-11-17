@@ -9,6 +9,7 @@ import { isAddress, sameAddress, checksum } from './evm.js';
 import { recoverPersonal } from './secp256k1.js';
 import { parseOwnerMessage } from './ownermsg.js';
 import { canvasToAvif } from './avif.js';
+import { cleanStamp, stampOffer } from './stampcore.js';
 
 export const BRAND_KIND = 30078; // NIP-78 application data; relays keep the latest one
 export const BRAND_D = 'reji-brand';
@@ -84,7 +85,7 @@ export function applyBrandColor(el, color) {
 }
 
 export const hasBrand = (s) => !!(s && (validLogo(s.logo) || validColor(s.brandColor) || validLink(s.storeLink) || cleanLinks(s.links).length
-  || [s.footer, s.tagline, s.people, s.about, s.eventName].some((v) => String(v || '').trim()) || (s.tips && s.tipAtt) || !!menuOf(s)));
+  || [s.footer, s.tagline, s.people, s.about, s.eventName].some((v) => String(v || '').trim()) || (s.tips && s.tipAtt) || !!stampOffer(s) || !!menuOf(s)));
 export function brandProfile(s) {
   const links = cleanLinks([s.storeLink, ...(s.links || [])]);
   return {
@@ -95,6 +96,7 @@ export function brandProfile(s) {
     ...(tipOffer(s) ? { tip: tipOffer(s) } : {}),
     ...(standOffer(s) ? { stand: standOffer(s) } : {}),
     ...(okuriOffer(s) ? { okuri: okuriOffer(s) } : {}),
+    ...(stampOffer(s) ? { stamp: stampOffer(s) } : {}),
     ...(menuOf(s) ? { menu: menuOf(s) } : {}),
   };
 }
@@ -170,6 +172,7 @@ export function parseBrand(json, pub = '') {
       stand: pub ? verifyStand(o.stand, pub) : null,
       okuri: pub && verifyTip(o.tip, pub) ? parseOkuri(o.okuri) : null, // only a store whose wallet signed for support can list
       menu: parseMenu(o.menu),
+      stamp: cleanStamp(o.stamp),
       addr: /^0x[0-9a-fA-F]{40}$/.test(String(o.addr || '')) ? String(o.addr) : '',
     };
   } catch {

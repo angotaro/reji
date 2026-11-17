@@ -1002,6 +1002,88 @@ try {
   await sleep(400);
   ok('置きQR: "book as a sale" books it, "not a sale" dismisses it', (await page.locator('.stand-inbox').count()) === 0 && !(await standSale(120)) && (await page.locator('.row-stand').count()) >= 2);
 
+  // ---- スタンプカード: counted on the customer's phone from its own receipts ----
+  await page.goto(`${BASE}app.html#/settings?s=info`);
+  await page.reload();
+  await page.waitForSelector('#stamp-box [name="stampOn"]');
+  await page.check('#stamp-box [name="stampOn"]');
+  await page.click('#save-bar button[type="submit"]');
+  ok('stamp card: a reward is required to turn it on', (await page.locator('[data-err="stampGift"]').textContent()).length > 0 && !(await settingsOf(page)).stampOn);
+  await page.fill('[name="stampGift"]', 'コーヒー1杯サービス');
+  await page.fill('[name="stampN"]', '2');
+  await page.fill('[name="stampMin"]', '200');
+  await page.locator('#stamp-box').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${OUT}/50-stamp-settings.png` });
+  await page.click('#save-bar button[type="submit"]');
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('reji:settings:v1')).stampOn === true);
+  const stampPub = new URL(storeHref, BASE).hash.slice(3);
+  const stampProfile = async () => { for (let i = 0; i < 30; i++) { const ev = hub.events.filter((e) => e.kind === 30078).map((e) => JSON.parse(e.content)).find((c) => c.stamp); if (ev) return ev; await sleep(300); } return null; };
+  const sp1 = await stampProfile();
+  ok('stamp card: the rule is published in the store\'s profile (count, reward, minimum, start)', sp1 && sp1.stamp.n === 2 && sp1.stamp.gift === 'コーヒー1杯サービス' && sp1.stamp.min === 200 && sp1.stamp.since > 0);
+  const payStand = async (amount, c) => {
+    const pg = await cust.newPage();
+    watch(pg, 'stamp payment', errors);
+    const tx = '0x' + c.repeat(32);
+    addTransfer({ from: CUSTOMER, value: BigInt(amount) * UNIT + BigInt(LIMITS.standMark), tx });
+    await pg.addInitScript((h) => { window.__txHash = h; }, tx);
+    await pg.goto(new URL(storeHref, BASE).href);
+    await pg.waitForSelector('.sp-stamp', { timeout: 15000 });
+    await pg.fill('[name="standYen"]', String(amount));
+    await pg.click('[data-act="stand-go"]');
+    await pg.waitForSelector('.wallet-btn', { timeout: 15000 });
+    await pg.tap('.wallet-btn');
+    await pg.waitForSelector('.pay-btn:not([disabled])');
+    await pg.tap('.pay-btn');
+    await pg.waitForSelector('.done-title', { timeout: 20000 });
+    const line = (await pg.locator('.stamp-line').count()) ? await pg.locator('.stamp-line').textContent() : '';
+    if (c === '63') await pg.screenshot({ path: `${OUT}/51-stamp-paid.png` });
+    await pg.close();
+    return line;
+  };
+  const lineLow = await payStand(100, '61');
+  const line1 = await payStand(200, '62');
+  const line2 = await payStand(250, '63');
+  ok('stamp card: after paying, the customer sees where the card stands; a sale below the minimum earns none', lineLow === '' && /1 \/ 2/.test(line1) && line1.includes('コーヒー1杯サービス') && /たまりました/.test(line2), `${lineLow}|${line1}|${line2}`);
+  const stampPg = await cust.newPage();
+  watch(stampPg, 'stamp card', errors);
+  await stampPg.goto(new URL(storeHref, BASE).href);
+  await stampPg.waitForSelector('.sp-stamp [data-act="stamp-use"]', { timeout: 15000 });
+  ok('stamp card on the store page: only payments since the card began and at least the minimum are stamps', (await stampPg.locator('.stamp-grid li').count()) === 2 && (await stampPg.locator('.stamp-grid li.on').count()) === 2
+    && (await stampPg.locator('.sp-mine li').count()) >= 4);
+  await stampPg.screenshot({ path: `${OUT}/52-stamp-card.png`, fullPage: true });
+  await stampPg.locator('.sp-stamp').screenshot({ path: `${OUT}/55-stamp-only.png` });
+  // the phone checks each receipt on the blockchain: forget the checks, and add a receipt nobody paid and one paid to someone else
+  const otherTx = '0x' + '64'.repeat(32);
+  addTransfer({ from: CUSTOMER, to: PAYER, value: 900n * UNIT, tx: otherTx });
+  await stampPg.evaluate(([otherTx]) => {
+    const list = JSON.parse(localStorage.getItem('reji:receipts:v1'));
+    const mine = list.find((x) => x.r.a === 250);
+    const fake = (tx, a) => ({ id: tx, savedAt: Date.now(), r: { ...mine.r, tx, a, n: 'FAKE' } });
+    localStorage.setItem('reji:receipts:v1', JSON.stringify([fake('0x' + 'ee'.repeat(32), 500), fake(otherTx, 900), ...list]));
+    localStorage.removeItem('reji:stamps:v1');
+  }, [otherTx]);
+  await stampPg.reload();
+  await stampPg.waitForSelector('.sp-stamp [data-act="stamp-use"]', { timeout: 15000 });
+  const stampRecLS = () => stampPg.evaluate(() => Object.values(JSON.parse(localStorage.getItem('reji:stamps:v1') || '{}'))[0]);
+  const recA = await stampRecLS();
+  ok('stamp card: receipts are checked on the blockchain; one nobody paid, or paid to another address, is no stamp', recA.ok.length === 2 && recA.bad.includes(otherTx) && (await stampPg.locator('.stamp-grid li.on').count()) === 2, JSON.stringify(recA));
+  await stampPg.click('[data-act="stamp-use"]');
+  await stampPg.waitForSelector('.modal .stamp-ticket [data-clock]');
+  ok('stamp card: the reward screen names the store and the reward, with a running clock', (await stampPg.locator('.modal .st-gift').textContent()) === 'コーヒー1杯サービス' && (await stampPg.locator('.modal .st-store').textContent()) === '喫茶たまご' && /\d\d:\d\d:\d\d/.test(await stampPg.locator('.modal [data-clock]').textContent()), await stampPg.locator('.modal .stamp-ticket').textContent());
+  await stampPg.screenshot({ path: `${OUT}/53-stamp-use.png` });
+  await stampPg.click('.modal [data-ok]');
+  await stampPg.waitForSelector('.modal .stamp-ticket.used');
+  await stampPg.screenshot({ path: `${OUT}/54-stamp-used.png` });
+  await stampPg.click('.modal [data-close]');
+  await stampPg.waitForSelector('.sp-stamp .stamp-last');
+  const recB = await stampRecLS();
+  ok('stamp card: marked as used in front of the staff; those stamps are gone and cannot be used again', recB.used.length === 2 && recB.log.length === 1 && (await stampPg.locator('.stamp-grid li.on').count()) === 0 && (await stampPg.locator('[data-act="stamp-use"]').count()) === 0);
+  await stampPg.reload();
+  await stampPg.waitForSelector('.sp-stamp .stamp-left');
+  ok('stamp card: still used after reopening the page', (await stampPg.locator('.stamp-grid li.on').count()) === 0);
+  await stampPg.close();
+  ok('stamp card: those payments are ordinary sales in the register', await nudge(async () => !!(await standSale(100)) && !!(await standSale(200)) && !!(await standSale(250))));
+
   // ---- はじめてのJPYC: the guide a new customer reaches from the pages they land on ----
   const hj = await cust.newPage();
   watch(hj, 'first-time guide', errors);

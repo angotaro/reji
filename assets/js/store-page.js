@@ -5,7 +5,8 @@ import { html, $, b64urlDecode, b64urlEncode, copyText, toast, store, yen, attr 
 import { TIP_PRESETS, LIMITS, CHAINS, chainName } from './config.js';
 import { sameAddress, isOkuriValue, isTipValue, UNIT } from './evm.js';
 import { t, getLang, setLang, fmtDateTime, fmtDay } from './i18n.js';
-import { icon } from './ui.js';
+import { icon, modal } from './ui.js';
+import { STAMP, stampable, cardState, stampRec } from './stampcore.js';
 import { cachedBrand, fetchBrand, applyBrandColor, okuriActive } from './brand.js';
 import { txReceipt, transfersInReceipt, rpc, blockNumber, scanTransfers } from './rpc.js';
 import { storeCard } from './storecard.js';
@@ -23,6 +24,7 @@ let pub = '';
 let profile = null;
 let phase = 'loading'; // loading | ready | missing | invalid
 let mine = [];
+let mineAll = []; // every receipt this phone has from the store (the stamp card counts these)
 let tipYen = 0;
 let tipChain = 0;
 let tipOpen = false;
@@ -129,6 +131,85 @@ function standHtml() {
   </section>`;
 }
 
+// ---- スタンプカード: counted here, from this phone's own receipts; each stamp is a payment checked on the blockchain ----
+const stampCard = () => (profile?.stamp && profile.addr ? profile.stamp : null);
+const stampAll = () => { const a = store.get(STAMP.key, {}); return a && typeof a === 'object' && !Array.isArray(a) ? a : {}; };
+const stampMine = () => stampRec(stampAll(), pub);
+const stampSave = (rec) => store.set(STAMP.key, { ...stampAll(), [pub]: rec });
+const stampNow = (card, rec = stampMine()) => cardState(stampable(mineAll.map((x) => x.r), pub, card), rec, card.n);
+let stampBusy = false;
+async function checkStamps() {
+  const card = stampCard();
+  if (!card || stampBusy) return;
+  const rec = stampMine();
+  const known = new Set([...rec.ok, ...rec.bad]);
+  const todo = stampable(mineAll.map((x) => x.r), pub, card).filter((x) => !known.has(x.id));
+  if (!todo.length) return;
+  stampBusy = true;
+  let changed = false;
+  for (const x of todo) {
+    try {
+      const rc = await txReceipt(x.c, x.tx);
+      if (!rc) continue; // not in a block yet: looked at again next time
+      const good = rc.status === '0x1' && transfersInReceipt(rc, profile.addr).some((v) => !isTipValue(v.value) && v.value / UNIT === BigInt(x.a));
+      (good ? rec.ok : rec.bad).push(x.id);
+      changed = true;
+    } catch { /* a node did not answer: that receipt waits */ }
+  }
+  stampBusy = false;
+  if (changed) {
+    const now = stampMine(); // keep what a reward used meanwhile
+    stampSave({ ...now, ok: [...new Set([...now.ok, ...rec.ok])], bad: [...new Set([...now.bad, ...rec.bad])] });
+    render();
+  }
+}
+function stampHtml() {
+  const card = stampCard();
+  if (!card) return '';
+  const rec = stampMine();
+  const st = stampNow(card, rec);
+  const filled = Math.min(st.have, card.n);
+  const last = rec.log.at(-1);
+  return html`<section class="sp-stamp" id="stamp">
+    <h2 class="panel-title">${t('sp.stampTitle')}</h2>
+    <p class="stamp-gift"><span>${t('sp.stampFor', { n: card.n })}</span><b>${card.gift}</b></p>
+    <ol class="stamp-grid" aria-label="${t('sp.stampCount', { have: filled, n: card.n })}">${Array.from({ length: card.n }, (_, i) => html`<li class="${i < filled ? 'on' : ''}">${i < filled ? icon('check') : String(i + 1)}</li>`)}</ol>
+    ${st.full ? html`<button type="button" class="btn primary big" data-act="stamp-use">${t('sp.stampUse')}</button>${st.have > card.n ? html`<p class="fine">${t('sp.stampCarry', { k: st.have - card.n })}</p>` : ''}`
+      : html`<p class="stamp-left">${t('sp.stampLeft', { k: card.n - st.have })}</p>`}
+    ${st.pending ? html`<p class="fine">${t('sp.stampPending', { n: st.pending })}</p>` : ''}
+    <p class="fine">${t(card.min ? 'sp.stampRuleMin' : 'sp.stampRule', { min: yen(card.min) })}</p>
+    ${last ? html`<p class="fine stamp-last">${t('sp.stampLast', { when: fmtDateTime(last.t) })}</p>` : ''}
+  </section>`;
+}
+/** The reward: shown to the store's staff, then marked used in front of them. The stamps it used are gone for good. */
+function useStamps() {
+  const card = stampCard();
+  if (!card) return;
+  const st = stampNow(card);
+  if (!st.full) return;
+  const clock = () => { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map((x) => String(x).padStart(2, '0')).join(':'); };
+  const ticket = (used) => html`<div class="stamp-ticket${used ? ' used' : ''}">
+      <p class="st-store">${profile.name || ''}</p>
+      <p class="st-gift">${card.gift}</p>
+      ${used ? html`<p class="st-used">${icon('check')}<span>${t('sp.useDone')}</span></p><p class="st-clock">${fmtDateTime(used)}</p>` : html`<p class="st-clock" data-clock>${clock()}</p>`}
+    </div>`;
+  const m = modal(html`<h2 class="modal-title">${t('sp.useTitle')}</h2>
+    ${ticket(0)}
+    <p class="modal-text">${t('sp.useLead', { n: card.n })}</p>
+    <details class="st-nos"><summary>${t('sp.useNos')}</summary><p>${st.next.map((x) => x.no || `${x.tx.slice(0, 10)}…`).join('、')}</p></details>
+    <div class="modal-actions"><button type="button" class="btn ghost" data-close>${t('common.cancel')}</button>
+      <button type="button" class="btn primary" data-ok>${t('sp.useOk')}</button></div>`, { label: t('sp.useTitle'), size: 'small', onClose: () => { clearInterval(tick); render(); } });
+  const tick = setInterval(() => { const c = m.el.querySelector('[data-clock]'); if (c) c.textContent = clock(); }, 1000);
+  m.el.querySelector('[data-ok]').addEventListener('click', () => {
+    const rec = stampMine();
+    const at = Date.now();
+    stampSave({ ...rec, used: [...rec.used, ...st.next.map((x) => x.id)], log: [...rec.log, { t: at, n: card.n, gift: card.gift }] });
+    m.el.innerHTML = String(html`<h2 class="modal-title">${t('sp.useTitle')}</h2>${ticket(at)}
+      <p class="modal-text">${t('sp.useDoneText')}</p>
+      <div class="modal-actions"><button type="button" class="btn primary" data-close>${t('common.close')}</button></div>`);
+  });
+}
+
 function tipHtml() {
   const tip = profile?.tip;
   if (!tip) return '';
@@ -180,7 +261,7 @@ async function myReceipts() {
       if (r.b === pub) out.push({ r, url: await receiptUrl(r) });
     } catch { /* skip a damaged entry */ }
   }
-  return out.sort((a, b) => b.r.t - a.r.t).slice(0, 30);
+  return out.sort((a, b) => b.r.t - a.r.t);
 }
 
 function render() {
@@ -199,6 +280,7 @@ function render() {
       ${phase === 'missing' && !profile ? html`<div class="notice warn"><p>${t('sp.missing')}</p></div><button type="button" class="btn primary" data-act="retry">${t('sp.retry')}</button>` : ''}
       ${profile ? html`${storeCard(profile)}
         ${standHtml()}
+        ${stampHtml()}
         <p class="sp-note">${t('sp.note')}</p>
         ${menuHtml()}
         <div class="btn-row sp-actions">
@@ -221,6 +303,7 @@ function render() {
   }
   if (profile?.logo) logoShown = true;
   if (okuriActive(profile)) okuriFacts();
+  checkStamps();
 }
 
 async function load() {
@@ -229,11 +312,13 @@ async function load() {
     phase = 'invalid';
     profile = null;
     mine = [];
+    mineAll = [];
     render();
     return;
   }
   profile = cachedBrand(pub);
-  mine = await myReceipts();
+  mineAll = await myReceipts();
+  mine = mineAll.slice(0, 30);
   phase = 'loading';
   render();
   const fresh = await fetchBrand(pub).catch(() => null);
@@ -280,6 +365,9 @@ app.addEventListener('click', async (e) => {
       standYen = Math.min(LIMITS.maxYen, standYen + Number(b.dataset.p || 0));
       render();
       document.getElementById('stand')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      break;
+    case 'stamp-use':
+      useStamps();
       break;
     case 'stand-clear':
       standYen = 0;

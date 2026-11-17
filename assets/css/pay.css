@@ -172,3 +172,29 @@ html, body { overflow-x: clip; }
 .sp-stand .panel-title { margin: 0; }
 .sp-items li .sp-add { flex: none; margin-left: 0.5rem; min-width: 2.2rem; padding: 0.15rem 0.5rem; font-weight: 800; }
 .sp-stand .stand-clear { justify-self: start; }
+
+/* ---- スタンプカード ---- */
+.sp-stamp { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line-soft, #d9dde8); border-radius: 14px; background: #fff; display: grid; gap: 0.7rem; }
+.sp-stamp .panel-title { margin: 0; }
+.sp-stamp .fine { margin: 0; }
+.stamp-gift { margin: 0; display: grid; gap: 0.1rem; line-height: 1.5; }
+.stamp-gift span { color: var(--ink-soft, #5a6480); font-size: var(--t-xs, 0.8rem); }
+.stamp-gift b { font-size: 1.1rem; overflow-wrap: anywhere; }
+.stamp-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+.stamp-grid li { aspect-ratio: 1; display: grid; place-items: center; border: 2px dashed var(--line, #c9cfdd); border-radius: 50%; color: #a3abbf; font-weight: 700; font-size: 0.9rem; }
+.stamp-grid li.on { border: 3px solid #c8442b; color: #c8442b; background: #fdf1ee; transform: rotate(-8deg); }
+.stamp-grid li.on:nth-child(even) { transform: rotate(6deg); }
+.stamp-grid li .ic { width: 55%; height: 55%; stroke-width: 2.6; }
+.stamp-left { margin: 0; font-weight: 700; }
+.stamp-ticket { margin: 0.2rem 0 0.9rem; padding: 1.1rem 1rem; border: 2px dashed var(--brand, var(--ai, #22305a)); border-radius: 14px; text-align: center; background: color-mix(in srgb, var(--brand, var(--ai, #22305a)) 6%, #fff); }
+.stamp-ticket p { margin: 0; }
+.st-store { color: var(--ink-soft, #5a6480); font-size: var(--t-xs, 0.8rem); }
+.st-gift { margin: 0.3rem 0 0.5rem !important; font-size: 1.35rem; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+.st-clock { font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: 0.04em; }
+.stamp-ticket.used { border-style: solid; border-color: #1f7a4d; background: #eef7f1; }
+.st-used { display: inline-flex; align-items: center; gap: 0.35rem; color: #1f7a4d; font-weight: 800; font-size: 1.1rem; }
+.st-used .ic { width: 22px; height: 22px; }
+.st-nos { margin: 0 0 0.9rem; color: var(--ink-soft, #5a6480); font-size: var(--t-xs, 0.8rem); }
+.st-nos p { margin: 0.3rem 0 0; overflow-wrap: anywhere; }
+.stamp-line { display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0 0.6rem; padding: 0.7rem 0.9rem; border: 1px solid #f0cfc6; border-radius: 12px; background: #fdf1ee; color: #8a2d16; font-weight: 700; text-decoration: none; line-height: 1.5; }
+.stamp-line .ic { flex: none; width: 20px; height: 20px; }

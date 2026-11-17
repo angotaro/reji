@@ -778,3 +778,7 @@ html[data-install="installed"] .install-card [data-for="installed"] { display: b
 .stand-box { margin-top: 1rem; }
 .row-stand { margin-left: 0.4rem; padding: 0.05rem 0.5rem; border-radius: 999px; background: #e9f1e4; color: #24451c; font-size: 0.75rem; font-weight: 700; }
 .stand-inbox { border-color: #c9dcbf; background: #f4f9f1; }
+
+/* ---- スタンプカード (settings) ---- */
+.stamp-box .stamp-fields { margin-top: 0.7rem; display: grid; gap: 0.6rem; }
+.stamp-box .check { margin-top: 0.3rem; }
