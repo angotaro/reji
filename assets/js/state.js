@@ -5,6 +5,7 @@ import { validLogo, validColor, validLink, mergeLinks, setMenuSource } from './b
 import { CHAINS, MAINNET_IDS, resolveChain } from './config.js';
 import { setRpcOverrides } from './rpc.js';
 import { isAddress, checksum } from './evm.js';
+import { cleanStock } from './stockcore.js';
 
 export const KEYS = {
   settings: 'reji:settings:v1',
@@ -146,6 +147,8 @@ export function normalizeProducts(list) {
       price: clamp(Math.trunc(Number(p.price) || 0), 0, 10_000_000),
       tax: [10, 8, 0].includes(Number(p.tax)) ? Number(p.tax) : 10,
       cat: String(p.cat ?? '').slice(0, 20),
+      out: p.out === true, // marked sold out by hand
+      stock: cleanStock(p.stock), // how many are left, or null when not counted
     }))
     .filter((p) => p.name);
 }

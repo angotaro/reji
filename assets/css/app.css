@@ -273,7 +273,7 @@ body.app { overflow: hidden; }
 .chain-opt { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px dotted var(--line); }
 .chain-test { color: var(--ink-soft); font-size: var(--t-xs); font-weight: 400; }
 .radio-inline { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; color: var(--ink-soft); font-size: var(--t-sm); cursor: pointer; }
-.prod-head, .prod-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.2fr) 124px; align-items: center; gap: 0.45rem; }
+.prod-head, .prod-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.2fr) minmax(0, 0.7fr) 124px; align-items: center; gap: 0.45rem; }
 .prod-head { padding: 0 0.1rem 0.35rem; color: var(--ink-soft); font-size: var(--t-xs); font-weight: 700; }
 .prod-list { display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
 .prod-row.invalid input { border-color: var(--danger); }
@@ -782,3 +782,14 @@ html[data-install="installed"] .install-card [data-for="installed"] { display: b
 /* ---- スタンプカード (settings) ---- */
 .stamp-box .stamp-fields { margin-top: 0.7rem; display: grid; gap: 0.6rem; }
 .stamp-box .check { margin-top: 0.3rem; }
+
+/* ---- 売り切れ・在庫 ---- */
+.tile.out { background: #f1f2f6; border-style: dashed; box-shadow: none; color: #8b93a8; }
+.tile.out .tile-price { color: #8b93a8; }
+.tile-out { align-self: flex-start; padding: 0.05rem 0.5rem; border-radius: 999px; background: #c8442b; color: #fff; font-size: var(--t-xs); font-weight: 700; }
+.tile-left { align-self: flex-start; color: var(--ink-soft, #5a6480); font-size: var(--t-xs); font-weight: 700; }
+.tiles.marking .tile { border-color: #c8442b; }
+.out-row { display: flex; justify-content: flex-end; margin: -0.25rem 0 0.4rem; }
+.out-btn { white-space: nowrap; min-height: 0; padding: 0.25rem 0.6rem; font-size: var(--t-xs); }
+.out-banner { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; border: 1px solid #f0cfc6; border-radius: 12px; background: #fdf1ee; color: #8a2d16; font-weight: 700; line-height: 1.5; }
+.out-banner .btn { flex: none; }

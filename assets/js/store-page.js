@@ -47,7 +47,7 @@ function menuHtml() {
   }
   return html`<section class="sp-menu">
     <h2 class="panel-title">${t('sp.menu')}<small>${t(m.tax === 'excl' ? 'sp.menuExcl' : 'sp.menuIncl')}</small></h2>
-    ${groups.map((g) => html`${g.cat ? html`<h3 class="sp-cat">${g.cat}</h3>` : ''}<ul class="sp-items">${g.items.map((it) => html`<li><span class="sp-name">${it.n}</span><span class="sp-lead" aria-hidden="true"></span><span class="sp-price">${yen(it.p)}</span>${profile.stand ? html`<button type="button" class="btn quiet small sp-add" data-act="stand-add" data-p="${it.p}" aria-label="${t('sp.standAdd', { name: it.n })}">＋</button>` : ''}</li>`)}</ul>`)}
+    ${groups.map((g) => html`${g.cat ? html`<h3 class="sp-cat">${g.cat}</h3>` : ''}<ul class="sp-items">${g.items.map((it) => html`<li class="${it.o ? 'out' : ''}"><span class="sp-name">${it.n}</span>${it.o ? html`<span class="sp-soldout">${t('sp.soldOut')}</span>` : ''}<span class="sp-lead" aria-hidden="true"></span><span class="sp-price">${yen(it.p)}</span>${profile.stand && !it.o ? html`<button type="button" class="btn quiet small sp-add" data-act="stand-add" data-p="${it.p}" aria-label="${t('sp.standAdd', { name: it.n })}">＋</button>` : ''}</li>`)}</ul>`)}
     ${m.items.length > limit ? html`<button type="button" class="btn quiet sp-more" data-act="menu-all">${t('sp.menuAll', { n: m.items.length })}</button>` : ''}
   </section>`;
 }

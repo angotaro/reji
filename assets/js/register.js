@@ -5,7 +5,8 @@ import { LIMITS } from './config.js';
 import { computeTotals } from './tax.js';
 import { state, saveCart, saveSettings, saveProducts, sampleProducts, on } from './state.js';
 import { icon, confirmDialog } from './ui.js';
-import { startCharge } from './charge.js';
+import { startCharge, republishMenuSoon } from './charge.js';
+import { soldOut, canAdd } from './stockcore.js';
 import { publishBrand } from './brand.js';
 import { getLang } from './i18n.js';
 
@@ -13,11 +14,13 @@ let cat = '';
 let kp = '';
 let root = null;
 let sheetOpen = false;
+let outMode = false; // tapping a tile marks it sold out instead of adding it
 
 const mode = () => state.settings.regMode;
 
 export function renderRegister(main) {
   root = main;
+  outMode = false;
   main.innerHTML = String(html`<div class="register" data-mode="${mode()}" data-sheet="${sheetOpen ? 'open' : 'closed'}">
     <section class="pick" aria-label="${t('reg.pickLabel')}">
       <div class="pick-bar">
@@ -58,14 +61,15 @@ function renderPick() {
         ${names.map((n) => html`<button type="button" class="chip" role="tab" aria-selected="${String(cat === n)}" data-act="cat" data-v="${n}">${n}</button>`)}
       </div>`)
     : '';
-  body.innerHTML = String(state.products.length ? tilesHtml() : emptyMenuHtml());
+  body.innerHTML = String(state.products.length ? html`${outMode ? html`<div class="out-banner" role="status"><span>${t('reg.outBanner')}</span><button type="button" class="btn primary small" data-act="out-done">${t('reg.outDone')}</button></div>` : html`<div class="out-row"><button type="button" class="btn quiet small out-btn" id="out-btn" data-act="out-mode">${t('reg.outMode')}</button></div>`}${tilesHtml()}` : emptyMenuHtml());
   updateBadges();
 }
 
 function tilesHtml() {
   const list = state.products.filter((p) => !cat || p.cat === cat);
-  return html`<div class="tiles">${list.map((p) => html`<button type="button" class="tile" data-act="add" data-id="${p.id}">
+  return html`<div class="tiles${outMode ? ' marking' : ''}">${list.map((p) => html`<button type="button" class="tile${soldOut(p) ? ' out' : ''}" data-act="add" data-id="${p.id}">
       <span class="tile-name">${p.name}</span>
+      ${soldOut(p) ? html`<span class="tile-out">${t('reg.soldOut')}</span>` : p.stock != null ? html`<span class="tile-left">${t('reg.left', { n: fmtInt(p.stock) })}</span>` : ''}
       <span class="tile-foot"><span class="tile-price">${yen(p.price)}</span>${p.tax !== 10 ? html`<span class="tile-tax">${p.tax}%</span>` : ''}</span>
       <span class="tile-qty" data-qty="${p.id}" hidden></span>
     </button>`)}</div>`;
@@ -175,9 +179,22 @@ function setSheet(open) {
   if (reg) reg.dataset.sheet = open ? 'open' : 'closed';
 }
 
+const inCart = (pid) => state.cart.reduce((a, l) => a + (l.pid === pid ? l.qty : 0), 0);
+/** 売り切れの切替: a tap flips the item. An item whose counted stock is 0 stays sold out until the count is changed in Settings. */
+function markOut(p) {
+  if (p.stock === 0) return toast(t('reg.outByStock'), 'error');
+  state.products = state.products.map((x) => (x.id === p.id ? { ...x, out: !x.out } : x));
+  saveProducts();
+  republishMenuSoon();
+  renderPick();
+}
+
 function addProduct(id, el) {
   const p = state.products.find((x) => x.id === id);
   if (!p) return;
+  if (outMode) return markOut(p);
+  if (soldOut(p)) return toast(t('reg.soldOutToast'), 'error');
+  if (!canAdd(p, inCart(p.id))) return toast(t('reg.onlyLeft', { n: fmtInt(p.stock) }), 'error');
   const line = state.cart.find((l) => l.pid === p.id && l.price === p.price && l.tax === p.tax && l.name === p.name);
   if (line) line.qty = Math.min(999, line.qty + 1);
   else {
@@ -239,6 +256,8 @@ async function onClick(e) {
     case 'dec': {
       const l = state.cart.find((x) => x.key === b.dataset.key);
       if (!l) return;
+      const lp = act === 'inc' && l.pid ? state.products.find((x) => x.id === l.pid) : null;
+      if (lp && lp.stock != null && !canAdd(lp, inCart(lp.id))) return toast(t('reg.onlyLeft', { n: fmtInt(lp.stock) }), 'error');
       l.qty += act === 'inc' ? 1 : -1;
       if (l.qty > 999) l.qty = 999;
       if (l.qty <= 0) state.cart = state.cart.filter((x) => x !== l);
@@ -276,6 +295,11 @@ async function onClick(e) {
     case 'kp-add':
       kpAdd();
       break;
+    case 'out-mode':
+    case 'out-done':
+      outMode = act === 'out-mode';
+      renderPick();
+      break;
     case 'sample':
       state.products = sampleProducts(getLang());
       saveProducts();
@@ -304,3 +328,4 @@ export function registerKey(e) {
 }
 
 on('cart', () => renderTape());
+on('products', () => renderPick());

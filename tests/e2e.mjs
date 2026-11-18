@@ -928,6 +928,7 @@ try {
   ok('sales: the list marks the sale and the summary shows refunds and what is left', (await page.locator('.z-refund').count()) === 1 && (await page.textContent('.z-refund')).includes('200'));
   await page.screenshot({ path: `${OUT}/46-refund-list.png` });
   await page.click(`[data-act="open"][data-id="${rid}"]`);
+  await page.waitForSelector('.modal .refund-list');
   ok('sale window: lists the refund with its note', (await page.textContent('.modal .refund-list')).includes('品切れのため'));
   await page.click('.modal [data-a="refund"]');
   await page.waitForSelector('.modal [name="ramount"]');
@@ -1001,6 +1002,77 @@ try {
   await page.locator('.stand-inbox li', { hasText: '120' }).locator('[data-act="stand-ignore"]').click();
   await sleep(400);
   ok('置きQR: "book as a sale" books it, "not a sale" dismisses it', (await page.locator('.stand-inbox').count()) === 0 && !(await standSale(120)) && (await page.locator('.row-stand').count()) >= 2);
+
+  // ---- 売り切れ・在庫: sold-out by hand, or when the counted stock runs out ----
+  const productsLS = () => page.evaluate(() => JSON.parse(localStorage.getItem('reji:products:v1') || '[]'));
+  const setStock = async (name, value) => {
+    await page.goto(`${BASE}app.html#/settings?s=menu`);
+    await page.reload();
+    await page.waitForSelector('.prod-row .p-stock');
+    const i = await page.evaluate((name) => [...document.querySelectorAll('.prod-row')].findIndex((r) => r.querySelector('.p-name').value === name), name);
+    await page.locator('.prod-row .p-stock').nth(i).fill(value);
+    await page.click('#save-bar button[type="submit"]');
+    await page.waitForFunction(([name, value]) => { const p = JSON.parse(localStorage.getItem('reji:products:v1')).find((x) => x.name === name); return (p.stock ?? '') === (value === '' ? '' : Number(value)); }, [name, value]);
+  };
+  const toRegister = async () => { await page.goto(`${BASE}app.html#/register`); await page.reload(); await page.waitForSelector('.tile'); };
+  await setLS({ regMode: 'menu' });
+  await setStock('抹茶ラテ', '2');
+  await toRegister();
+  const latte = page.locator('.tile:has-text("抹茶ラテ")');
+  ok('stock: a counted item shows how many are left', /2/.test(await latte.locator('.tile-left').textContent()));
+  await latte.click(); await latte.click(); await latte.click();
+  await page.click('.tape .step[data-act="inc"]');
+  ok('stock: the cart cannot hold more than the count, by tile or by the + button', (await page.evaluate(() => JSON.parse(localStorage.getItem('reji:cart:v1')).reduce((a, l) => a + l.qty, 0))) === 2);
+  await page.click('.tape-actions .charge-btn');
+  await page.waitForSelector('#listen[data-state="ok"]', { timeout: 15000 });
+  const stockPending = await page.evaluate(() => JSON.parse(localStorage.getItem('reji:pending:v1')));
+  addTransfer({ value: BigInt(stockPending.amountYen) * UNIT + BigInt(stockPending.suffix), tx: '0x' + '71'.repeat(32) });
+  await page.waitForSelector('.charge[data-phase="paid"]', { timeout: 20000 });
+  await page.click('[data-act="next"]');
+  await page.waitForSelector('.tile.out');
+  ok('stock: sold with the sale; at 0 the item is sold out and cannot be added', (await productsLS()).find((p) => p.name === '抹茶ラテ').stock === 0
+    && (await latte.locator('.tile-out').count()) === 1);
+  await latte.click();
+  ok('stock: a sold-out tile adds nothing', (await page.evaluate(() => JSON.parse(localStorage.getItem('reji:cart:v1') || '[]').length)) === 0);
+  await page.click('#out-btn');
+  await page.waitForSelector('.out-banner');
+  await page.click('.tile:has-text("ブレンドコーヒー")');
+  await latte.click(); // counted to 0: stays sold out until the count is changed
+  await sleep(200);
+  ok('sold out by hand: in the switching mode a tap marks the item, and nothing goes into the cart', (await productsLS()).find((p) => p.name === 'ブレンドコーヒー').out === true
+    && (await productsLS()).find((p) => p.name === '抹茶ラテ').stock === 0 && (await page.locator('.tile.out').count()) === 2
+    && (await page.evaluate(() => JSON.parse(localStorage.getItem('reji:cart:v1') || '[]').length)) === 0);
+  { // the manual's picture, in Japanese
+    const lang = await page.evaluate(() => localStorage.getItem('reji:lang'));
+    await page.evaluate(() => localStorage.setItem('reji:lang', 'ja'));
+    await toRegister();
+    await page.click('#out-btn');
+    await page.waitForSelector('.out-banner');
+    await page.screenshot({ path: `${OUT}/56-stock-register.png` });
+    await page.evaluate((l) => (l === null ? localStorage.removeItem('reji:lang') : localStorage.setItem('reji:lang', l)), lang);
+    await toRegister();
+    await page.click('#out-btn');
+    await page.waitForSelector('.out-banner');
+  }
+  await page.click('[data-act="out-done"]');
+  ok('sold out by hand: 「完了」 ends the mode', (await page.locator('.out-banner').count()) === 0 && (await page.locator('#out-btn').isVisible()));
+  const outMenu = async () => { for (let i = 0; i < 40; i++) { const m = hub.events.filter((e) => e.kind === 30078).map((e) => JSON.parse(e.content)).filter((c) => c.menu).at(-1); const o = (m?.menu.items || []).filter((x) => x.o).map((x) => x.n).sort().join(); if (o === ['ブレンドコーヒー', '抹茶ラテ'].sort().join()) return m; await sleep(300); } return null; };
+  const outProf = await outMenu();
+  ok('sold out: the store page\'s menu learns it a few seconds later; the count itself is never published', !!outProf && !JSON.stringify(outProf).includes('stock'));
+  const outPg = await cust.newPage();
+  watch(outPg, 'sold-out menu', errors);
+  await outPg.goto(new URL(storeHref, BASE).href);
+  await outPg.waitForSelector('.sp-items li.out', { timeout: 15000 });
+  ok('sold out on the store page: marked 売り切れ, and no 「＋」 to pay for it', (await outPg.locator('.sp-items li.out').count()) === 2 && (await outPg.locator('.sp-items li.out .sp-add').count()) === 0
+    && (await outPg.locator('.sp-items li:not(.out) .sp-add').count()) > 0);
+  await outPg.locator('.sp-menu').screenshot({ path: `${OUT}/57-stock-store.png` });
+  await outPg.close();
+  await page.click('#out-btn');
+  await page.click('.tile:has-text("ブレンドコーヒー")');
+  await page.click('[data-act="out-done"]');
+  await setStock('抹茶ラテ', '');
+  await toRegister();
+  ok('sold out: tapping again, or clearing the count, puts the item back on sale', (await page.locator('.tile.out').count()) === 0);
 
   // ---- スタンプカード: counted on the customer's phone from its own receipts ----
   await page.goto(`${BASE}app.html#/settings?s=info`);

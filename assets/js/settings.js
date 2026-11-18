@@ -227,6 +227,7 @@ const prodRow = (p = { id: 'p' + uid(8), name: '', price: '', tax: 10, cat: '' }
   <input class="p-price" type="number" min="0" max="10000000" step="1" inputmode="numeric" value="${p.price}" placeholder="0" aria-label="${t('set.pPrice')}">
   <select class="p-tax" aria-label="${t('set.pTax')}">${[10, 8, 0].map((r) => html`<option value="${r}"${attr('selected', Number(p.tax) === r)}>${t('tax.r' + r)}</option>`)}</select>
   <input class="p-cat" value="${p.cat}" maxlength="20" list="cat-list" placeholder="${t('set.pCatPh')}" aria-label="${t('set.pCat')}">
+  <input class="p-stock" type="text" inputmode="numeric" maxlength="4" value="${p.stock ?? ''}" placeholder="${t('set.stock')}" aria-label="${t('set.stock')}"${attr('data-out', p.out)}>
   <span class="p-tools">
     <button type="button" class="icon-btn" data-act="p-up" aria-label="${t('set.pUp')}">${icon('up')}</button>
     <button type="button" class="icon-btn" data-act="p-down" aria-label="${t('set.pDown')}">${icon('down')}</button>
@@ -239,10 +240,11 @@ const menuSec = () => {
   return html`<section class="set-sec" id="sec-menu">
     <h2>${t('set.sec.menu')}</h2>
     <p class="hint">${t('set.menuHint')}</p>
-    <div class="prod-head" aria-hidden="true"><span>${t('set.pName')}</span><span>${t('set.pPrice')}</span><span>${t('set.pTax')}</span><span>${t('set.pCat')}</span><span></span></div>
+    <div class="prod-head" aria-hidden="true"><span>${t('set.pName')}</span><span>${t('set.pPrice')}</span><span>${t('set.pTax')}</span><span>${t('set.pCat')}</span><span>${t('set.stock')}</span><span></span></div>
     <ol class="prod-list" id="prod-list">${state.products.map(prodRow)}</ol>
     <datalist id="cat-list">${cats.map((c) => html`<option value="${c}">`)}</datalist>
     <p class="field-error" data-err="products"></p>
+    <p class="hint">${t('set.stockHint')}</p>
     <div class="prod-actions">
       <button type="button" class="btn ghost" data-act="p-add">${icon('plus')}<span>${t('set.pAdd')}</span></button>
       <button type="button" class="btn quiet" data-act="p-sample">${t('reg.loadSample')}</button>
@@ -584,7 +586,14 @@ function readProducts(form, errors) {
       errors.products = t('err.products');
       continue;
     }
-    out.push({ id: row.dataset.id, name: name.slice(0, 40), price, tax: Number(row.querySelector('.p-tax').value), cat: row.querySelector('.p-cat').value.trim().slice(0, 20) });
+    const stockRaw = toHalfWidth(row.querySelector('.p-stock')?.value ?? '').trim();
+    if (stockRaw && !/^\d{1,4}$/.test(stockRaw)) {
+      row.classList.add('invalid');
+      errors.products = t('err.products');
+      continue;
+    }
+    out.push({ id: row.dataset.id, name: name.slice(0, 40), price, tax: Number(row.querySelector('.p-tax').value), cat: row.querySelector('.p-cat').value.trim().slice(0, 20),
+      stock: stockRaw ? Number(stockRaw) : null, out: row.querySelector('.p-stock')?.hasAttribute('data-out') === true });
   }
   return out;
 }

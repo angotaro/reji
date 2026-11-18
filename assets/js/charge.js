@@ -10,12 +10,13 @@ import { computeTotals, summarizeItems } from './tax.js';
 import { receiptFromSale, receiptUrl, renderReceipt } from './receipt.js';
 import { chime, unlockAudio } from './sound.js';
 import {
-  state, saveCart, saveSales, savePending, saveUnpaid, saveSettings, activeChains, nextReceiptNo, consumedKeys, transferKey, emit, on,
+  state, saveCart, saveSales, savePending, saveUnpaid, saveSettings, saveProducts, activeChains, nextReceiptNo, consumedKeys, transferKey, emit, on,
 } from './state.js';
 import { icon, stampSvg, confirmDialog, printHtml } from './ui.js';
 import { gaslessReady, startDeviceRelay, gasChainId } from './gas.js';
 import { newChannel } from './nostr.js';
-import { hasBrand, brandPub, ensureBrandKey, safeColor, validLogo, eventLine } from './brand.js';
+import { hasBrand, brandPub, ensureBrandKey, safeColor, validLogo, eventLine, publishBrand } from './brand.js';
+import { stockLines, afterSale, outKey } from './stockcore.js';
 import { randomPrivateKey, privateKeyToHex, schnorrPublicKey, hexToBytes } from './secp256k1.js';
 
 const GRACE_MS = 3 * 60_000; // keep listening this long after expiry for payments already in flight
@@ -54,6 +55,25 @@ export function payUrl(c, chainId = c.chainId) {
 // (HashPort Wallet's steps, buttons that open it inside wallet apps, a link to paste, manual sending).
 const qrText = (c, chainId) => payUrl(c, chainId);
 
+/** Counted stock goes down once per charge, when its goods leave: paid, or handed over on pay-later. */
+let outTimer = 0;
+export function republishMenuSoon() {
+  clearTimeout(outTimer);
+  outTimer = setTimeout(() => publishBrand(state.settings).catch(() => {}), 5000); // the store page's 売り切れ; a no-op without a profile
+}
+function takeStock(c) {
+  if (!c || c.stockDone || !Array.isArray(c.stock) || !c.stock.length) return;
+  c.stockDone = true;
+  const before = outKey(state.products);
+  const next = afterSale(state.products, c.stock);
+  if (next.some((p, i) => p !== state.products[i])) {
+    state.products = next;
+    saveProducts();
+    emit('products');
+    if (outKey(next) !== before) republishMenuSoon();
+  }
+}
+
 export function startCharge() {
   if (hasBrand(state.settings) && !brandPub()) ensureBrandKey().catch(() => {}); // ready for the next charge
   if (cur) return;
@@ -64,6 +84,7 @@ export function startCharge() {
     return;
   }
   const items = state.cart.map(({ name, price, tax, qty }) => ({ name, price, tax, qty }));
+  const stock = stockLines(state.cart); // which menu items leave the store with this charge
   const tot = computeTotals(items, s.taxMode);
   if (!tot.total) return;
   if (tot.total > LIMITS.maxYen) {
@@ -78,6 +99,7 @@ export function startCharge() {
     createdAt: now,
     expiresAt: now + s.expiryMin * 60_000,
     amountYen: tot.total,
+    stock,
     items,
     taxMode: s.taxMode,
     suffix: randInt(1, LIMITS.suffixMax), // invisible wei suffix that makes this charge's amount unique
@@ -241,6 +263,7 @@ function markPaid(tr, chainId, match) {
   if (consumedKeys().has(keyOf(tr))) return;
   const c = cur.c;
   stopWatchers();
+  takeStock(c);
   const sale = makeSale(c, tr, chainId, match);
   state.sales.unshift(sale);
   saveSales();
@@ -509,6 +532,8 @@ async function payLater() {
   const entry = toLater(c);
   const memo = await laterDialog(entry);
   if (memo === null || !cur || cur.c.id !== c.id || cur.phase === 'paid') return; // closed, or paid in the meantime
+  takeStock(c); // the goods go now
+  entry.stockDone = true;
   stopWatchers();
   clearInterval(cur.tick);
   state.unpaid = [{ ...entry, memo }, ...state.unpaid.filter((u) => u.id !== c.id)];
@@ -805,6 +830,7 @@ export async function bookUnpaid(u, tr, chainId, match) {
     const b = await rpc(chainId, 'eth_getBlockByNumber', ['0x' + tr.blockNumber.toString(16), false]);
     if (b?.timestamp) paidAt = Number(BigInt(b.timestamp)) * 1000;
   } catch { /* keep "now" */ }
+  takeStock(u); // a charge that timed out and was paid after all
   const sale = makeSale(u, tr, chainId, match, paidAt);
   sale.late = true;
   state.sales.unshift(sale);

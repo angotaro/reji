@@ -119,6 +119,12 @@ A printed QR opens the store page, where a "pay here" section lets the customer 
 
 A sticker pasted over the printed QR cannot be detected by software; the manual tells stores to check their sign.
 
+### Sold out and stock (売り切れ・在庫)
+
+A register can stop selling an item on the spot: 「売り切れの切替」 turns on a mode where a tap marks a tile sold out (and a second tap undoes it). A menu item can also carry an optional stock count (Settings → Menu). The count goes down when the goods leave (a paid charge, or a hand-over on pay-later), the cart cannot hold more than the count, and at 0 the item is sold out by itself. The store page's menu shows 売り切れ a few seconds later and hides the 「＋」 for that item; the count itself is never published. Logic: `assets/js/stockcore.js`.
+
+Limits: stock is counted per register (two registers do not share it), a refund does not put stock back, 置きQR sales do not reduce it, and the public page needs a connection to update.
+
 ### Stamp card (スタンプカード)
 
 A store can offer a stamp card with no accounts and no customer data. The rule (stamps needed, the reward, an optional minimum sale, the start date) is published in the store's profile. The customer's phone counts its own saved receipts from that store: one stamp per payment, since the card began, at or above the minimum. Before a receipt counts, the phone looks the payment up on the blockchain and checks it reached the store's address for that amount, so a made-up receipt is no stamp. The store page shows the card; the payment-complete screen shows where it stands. To use a reward the customer opens a screen with the store, the reward and a running clock, and presses "mark as used" in front of the staff; those stamps are spent on that phone for good. The logic is `assets/js/stampcore.js`.
@@ -210,9 +216,9 @@ Limits to know: someone with the unlocked register and developer tools can chang
 
 ```sh
 python3 -m http.server 8080        # from the project root
-node --test                        # unit tests (72)
+node --test                        # unit tests (74)
 npm i -D playwright && npx playwright install chromium
-node tests/e2e.mjs                 # end to end (216 checks, screenshots in tests/shots/)
+node tests/e2e.mjs                 # end to end (225 checks, screenshots in tests/shots/)
 node tests/devices.mjs             # 13 phones and tablets × 11 screens (tests/shots/devices/)
 node tests/offline-workers.mjs     # offline loading under Workers' .html redirects
 node tests/clean-urls.mjs          # the deployed copy's addresses without .html

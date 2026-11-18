@@ -10,6 +10,7 @@ import { recoverPersonal } from './secp256k1.js';
 import { parseOwnerMessage } from './ownermsg.js';
 import { canvasToAvif } from './avif.js';
 import { cleanStamp, stampOffer } from './stampcore.js';
+import { soldOut } from './stockcore.js';
 
 export const BRAND_KIND = 30078; // NIP-78 application data; relays keep the latest one
 export const BRAND_D = 'reji-brand';
@@ -107,12 +108,12 @@ export const setMenuSource = (fn) => { menuSource = fn; };
 export function menuOf(s, products = menuSource()) {
   if (!s || s.showMenu === false) return null;
   const items = (Array.isArray(products) ? products : []).filter((p) => p && String(p.name || '').trim()).slice(0, 80)
-    .map((p) => ({ n: clean(p.name, 40), p: Math.max(0, Math.min(10_000_000, Math.trunc(Number(p.price) || 0))), c: clean(p.cat, 20) }));
+    .map((p) => ({ n: clean(p.name, 40), p: Math.max(0, Math.min(10_000_000, Math.trunc(Number(p.price) || 0))), c: clean(p.cat, 20), ...(soldOut(p) ? { o: 1 } : {}) })); // sold out is shown; how many are left is never published
   return items.length ? { tax: s.taxMode === 'excl' ? 'excl' : 'incl', items } : null;
 }
 function parseMenu(m) {
   if (!m || typeof m !== 'object' || !Array.isArray(m.items)) return null;
-  const items = m.items.slice(0, 80).map((x) => ({ n: clean(x?.n, 40), p: Number.isInteger(x?.p) && x.p >= 0 && x.p <= 10_000_000 ? x.p : -1, c: clean(x?.c, 20) }))
+  const items = m.items.slice(0, 80).map((x) => ({ n: clean(x?.n, 40), p: Number.isInteger(x?.p) && x.p >= 0 && x.p <= 10_000_000 ? x.p : -1, c: clean(x?.c, 20), ...(x?.o ? { o: 1 } : {}) }))
     .filter((x) => x.n.trim() && x.p >= 0);
   return items.length ? { tax: m.tax === 'excl' ? 'excl' : 'incl', items } : null;
 }

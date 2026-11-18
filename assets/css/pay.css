@@ -198,3 +198,8 @@ html, body { overflow-x: clip; }
 .st-nos p { margin: 0.3rem 0 0; overflow-wrap: anywhere; }
 .stamp-line { display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0 0.6rem; padding: 0.7rem 0.9rem; border: 1px solid #f0cfc6; border-radius: 12px; background: #fdf1ee; color: #8a2d16; font-weight: 700; text-decoration: none; line-height: 1.5; }
 .stamp-line .ic { flex: none; width: 20px; height: 20px; }
+
+/* ---- 売り切れ (store page menu) ---- */
+.sp-items li.out .sp-name, .sp-items li.out .sp-price { color: #9aa2b6; }
+.sp-items li.out .sp-price { text-decoration: line-through; }
+.sp-soldout { flex: none; margin-left: 0.4rem; padding: 0.05rem 0.5rem; border-radius: 999px; background: #c8442b; color: #fff; font-size: var(--t-xs, 0.8rem); font-weight: 700; }

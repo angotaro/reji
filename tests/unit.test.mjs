@@ -560,3 +560,29 @@ test('スタンプカード: one stamp per on-chain payment to this store, since
   assert.deepEqual(stampRec({ [pub]: { ok: [tx('1'), 'junk', 5], used: 'x', log: [{ t: 5 }, null] } }, pub), { ok: [tx('1')], bad: [], used: [], log: [{ t: 5 }] });
   assert.deepEqual(stampRec(null, pub), { ok: [], bad: [], used: [], log: [] });
 });
+
+import { soldOut, canAdd, stockLines, afterSale, outKey, cleanStock } from '../assets/js/stockcore.js';
+test('売り切れ・在庫: sold out by hand or at zero; the cart cannot hold more than the count; stock never goes below 0', () => {
+  assert.equal(soldOut({ out: true, stock: null }), true);
+  assert.equal(soldOut({ out: false, stock: 0 }), true);
+  assert.equal(soldOut({ out: false, stock: null }), false);
+  assert.equal(soldOut({ out: false, stock: 3 }), false);
+  assert.equal(canAdd({ stock: null }, 500), true);
+  assert.equal(canAdd({ stock: 2 }, 1), true);
+  assert.equal(canAdd({ stock: 2 }, 2), false);
+  assert.equal(canAdd({ out: true, stock: 5 }, 0), false);
+  assert.deepEqual([cleanStock(''), cleanStock(null), cleanStock('3'), cleanStock(-1), cleanStock(1.5), cleanStock(99999)], [null, null, 3, null, null, 9999]);
+  assert.deepEqual(stockLines([{ pid: 'a', qty: 2 }, { pid: 'a', qty: 1 }, { qty: 4 }, { pid: 'b', qty: 1 }]), [{ pid: 'a', qty: 3 }, { pid: 'b', qty: 1 }]);
+  const menu = [{ id: 'a', stock: 2 }, { id: 'b', stock: null }, { id: 'c', stock: 5, out: true }];
+  const next = afterSale(menu, [{ pid: 'a', qty: 3 }, { pid: 'b', qty: 1 }]);
+  assert.deepEqual(next.map((p) => p.stock), [0, null, 5]);
+  assert.equal(next[1], menu[1]); // an uncounted item is left alone
+  assert.equal(outKey(menu), 'c');
+  assert.equal(outKey(next), 'a,c');
+});
+test('売り切れ: the public menu carries the flag and never the count', () => {
+  const menu = menuOf({ showMenu: true, taxMode: 'incl' }, [{ id: 'a', name: 'A', price: 100, stock: 0 }, { id: 'b', name: 'B', price: 200, stock: 7 }, { id: 'c', name: 'C', price: 300, out: true }]);
+  assert.deepEqual(menu.items.map((x) => x.o || 0), [1, 0, 1]);
+  assert.equal(JSON.stringify(menu).includes('stock') || JSON.stringify(menu).includes('7'), false);
+  assert.deepEqual(parseBrand({ name: 'S', menu: JSON.parse(JSON.stringify(menu)) }).menu.items.map((x) => x.o || 0), [1, 0, 1]);
+});
